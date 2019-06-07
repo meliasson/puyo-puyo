@@ -2,7 +2,7 @@ import React from "react";
 
 class Pong extends React.Component {
   ws = new window.WebSocket(
-    `ws://localhost:${process.env.REACT_APP_WEBSOCKET_PORT}`
+    process.env.REACT_APP_WEBSOCKET_URL || `ws://${window.location.host}`
   );
 
   componentDidMount() {
