@@ -1,3 +1,4 @@
+import * as PIXI from "pixi.js";
 import React from "react";
 
 class Game extends React.Component {
@@ -25,6 +26,12 @@ class Game extends React.Component {
         this.ws.send(JSON.stringify({ action: "right" }));
       }
     });
+
+    let type = "WebGL";
+    if (!PIXI.utils.isWebGLSupported()) {
+      type = "canvas";
+    }
+    PIXI.utils.sayHello(type);
   }
 
   render() {
