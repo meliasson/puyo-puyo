@@ -1,10 +1,6 @@
 import React from "react";
 
 class Pong extends React.Component {
-  ws = new window.WebSocket(
-    process.env.REACT_APP_WEBSOCKET_URL || `ws://${window.location.host}`
-  );
-
   componentDidMount() {
     fetch("/ping")
       .then(response => {
@@ -14,15 +10,6 @@ class Pong extends React.Component {
       .then(pong => {
         console.log(pong);
       });
-
-    this.ws.onopen = () => {
-      console.log("Websocket connected");
-    };
-
-    this.ws.onmessage = event => {
-      const message = JSON.parse(event.data);
-      console.log("Websocket received message:", message);
-    };
   }
 
   render() {
