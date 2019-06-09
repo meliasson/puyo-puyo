@@ -14,19 +14,21 @@ const expressServer = app.listen(port, () => {
 });
 
 // Websocket
+const uuidv1 = require("uuid/v1");
 const WebSocket = require("ws");
 const wss = new WebSocket.Server({ server: expressServer });
 console.log(`Websocket listening on port ${port}`);
 wss.on("connection", function connection(ws) {
-  console.log(`Websocket client connected`);
-  ws.send(JSON.stringify({ status: "connected" }));
+  ws.id = uuidv1();
+  console.log(`Websocket client ${ws.id} connected`);
+  ws.send(JSON.stringify({ status: "connected", id: ws.id }));
 
   ws.on("message", function incoming(event) {
-    console.log(`Websocket client sent messaget ${event}`);
+    console.log(`Websocket client ${ws.id} sent message ${event}`);
     const message = JSON.parse(event);
   });
 
   ws.on("close", function incoming() {
-    console.log(`Websocket client disconnected`);
+    console.log(`Websocket client ${ws.id} disconnected`);
   });
 });
