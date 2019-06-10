@@ -1,3 +1,4 @@
+import { scaleToWindow } from "./helpers";
 import * as PIXI from "pixi.js";
 import React from "react";
 
@@ -27,15 +28,13 @@ class Game extends React.Component {
       }
     });
 
-    let type = "WebGL";
-    if (!PIXI.utils.isWebGLSupported()) {
-      type = "canvas";
-    }
-    PIXI.utils.sayHello(type);
+    const app = new PIXI.Application({ width: 640, height: 360 });
+    document.getElementById("root").appendChild(app.view);
+    scaleToWindow(app.renderer.view);
   }
 
   render() {
-    return <div>Greetings from Game component!</div>;
+    return null;
   }
 }
 
