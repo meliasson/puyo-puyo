@@ -1,9 +1,15 @@
 import React from "react";
 import "./App.css";
-import Game from "./Game.js";
+import { initGame } from "./game";
 
-function App() {
-  return <Game />;
+class App extends React.Component {
+  componentDidMount() {
+    initGame();
+  }
+
+  render() {
+    return null;
+  }
 }
 
 export default App;

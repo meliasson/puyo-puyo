@@ -6,7 +6,7 @@ const game = {
   join: function(clientId) {
     this.clients[clientId] = {
       id: clientId,
-      position: [Math.floor(Math.random() * 8), Math.floor(Math.random() * 8)]
+      position: [Math.floor(Math.random() * 16), Math.floor(Math.random() * 9)]
     };
   },
   leave: function(clientId) {
@@ -28,7 +28,7 @@ const game = {
         client.position[0] = client.position[0] + 1;
         break;
       default:
-        throw new Error("Received unknown action");
+        throw new Error("Unknown action");
     }
   }
 };
@@ -65,5 +65,16 @@ wss.on("connection", function connection(ws) {
 
   ws.on("close", function incoming() {
     console.log(`Websocket client ${ws.id} disconnected`);
+    game.leave(ws.id);
   });
 });
+
+// Game loop
+function gameLoop() {
+  const message = JSON.stringify({ status: "loop", clients: game.clients });
+
+  for (const client of wss.clients) {
+    client.send(message);
+  }
+}
+setInterval(gameLoop, 1000);
