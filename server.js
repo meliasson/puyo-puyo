@@ -77,4 +77,4 @@ function gameLoop() {
     client.send(message);
   }
 }
-setInterval(gameLoop, 1000);
+setInterval(gameLoop, 1000 / 30);

@@ -1,40 +1,33 @@
-import * as PIXI from "pixi.js";
-import { scaleToWindow } from "./helpers";
-import tentacle from "./tentacle.png";
-
-let app;
 let ws;
-let scale;
+let canvas;
+let context;
 
-function initPixiJs() {
-  app = new PIXI.Application({ width: 640, height: 360 });
-  document.getElementById("root").appendChild(app.view);
-  scale = scaleToWindow(app.renderer.view);
+function updateView(clients) {
+  const size = Math.min(window.innerWidth, window.innerHeight);
+  canvas.width = size - (size % 8);
+  canvas.height = size - (size % 8);
 
-  app.loader.add("bunny", tentacle).load((loader, resources) => {
-    // This creates a texture from a 'bunny.png' image
-    const bunny = new PIXI.Sprite(resources.bunny.texture);
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#303030";
+  context.fillRect(0, 0, canvas.width, canvas.height);
 
-    bunny.width = app.renderer.width / 16;
-    bunny.height = bunny.width; /* app.renderer.height / 9; */
+  for (const clientId in clients) {
+    const client = clients[clientId];
+    context.fillStyle = "#FE4365";
+    const squareSize = canvas.width / 8;
+    context.fillRect(
+      client.position[0] * squareSize,
+      client.position[1] * squareSize,
+      squareSize,
+      squareSize
+    );
+  }
+}
 
-    // Setup the position of the bunny
-    bunny.x = bunny.width * 15;
-    bunny.y = bunny.width * 8;
-
-    // Rotate around the center
-    bunny.anchor.x = 0;
-    bunny.anchor.y = 0;
-
-    // Add the bunny to the scene we are building
-    app.stage.addChild(bunny);
-
-    // Listen for frame updates
-    app.ticker.add(() => {
-      // each frame we spin the bunny around a bit
-      /* bunny.rotation += 0.01; */
-    });
-  });
+function initView() {
+  canvas = document.createElement("canvas");
+  document.getElementById("root").appendChild(canvas);
+  context = canvas.getContext("2d");
 }
 
 function initKeydownEventListener() {
@@ -62,9 +55,8 @@ function initWebSocket() {
 
   ws.onmessage = event => {
     const message = JSON.parse(event.data);
-    console.log("Websocket received message:", message);
     if (message.status === "loop") {
-      // TODO: Figure out how to render message.clients.
+      updateView(message.clients);
     }
   };
 }
@@ -72,5 +64,5 @@ function initWebSocket() {
 export function initGame() {
   initWebSocket();
   initKeydownEventListener();
-  initPixiJs();
+  initView();
 }
