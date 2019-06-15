@@ -4,6 +4,7 @@
 }
 
 #root {
-  background: whitesmoke;
+  background: black;
+  height: 100vh;
   text-align: center;
 }

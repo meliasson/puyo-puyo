@@ -1,37 +1,95 @@
 const port = process.env.PORT || 3100;
 
-// Game
-const game = {
-  clients: {},
-  join: function(clientId) {
-    this.clients[clientId] = {
-      id: clientId,
-      position: [Math.floor(Math.random() * 16), Math.floor(Math.random() * 9)]
-    };
-  },
-  leave: function(clientId) {
-    delete this.clients[clientId];
-  },
-  update: function(clientId, action) {
-    const client = this.clients[clientId];
+class Board {
+  constructor() {
+    this._grid = this._buildGrid(16, 6);
+
+    // TODO: Initialize board with a piece of puyos and implement
+    // gravity (probably two loops: all puyos are pulled down all the
+    // time and the falling piece drops a bit slower) and react on
+    // user input.
+  }
+
+  _buildGrid(height, width) {
+    const grid = [];
+    for (let i = 0; i < height; i++) {
+      grid[i] = [];
+      for (let j = 0; j < width; j++) {
+        grid[i][j] = null;
+      }
+    }
+    return grid;
+  }
+
+  toJSON() {
+    return this._grid;
+  }
+}
+
+class Game {
+  constructor() {
+    this._clients = new Map();
+  }
+
+  join(clientId) {
+    this._clients.set(clientId, new Board());
+  }
+
+  leave(clientId) {
+    delete this._clients[clientId];
+  }
+
+  isFull() {
+    return this._clients.size == 2;
+  }
+
+  isParticipant(clientId) {
+    return this._clients.has(clientId);
+  }
+
+  update(clientId, action) {
+    const client = this._clients.get(clientId);
     switch (action) {
-      case "up":
-        client.position[1] = client.position[1] - 1;
+      case "rotate":
         break;
-      case "down":
-        client.position[1] = client.position[1] + 1;
+      case "drop":
         break;
       case "left":
-        client.position[0] = client.position[0] - 1;
         break;
       case "right":
-        client.position[0] = client.position[0] + 1;
         break;
       default:
         throw new Error("Unknown action");
     }
   }
-};
+
+  toJSON() {
+    return { boards: Array.from(this._clients.values()) };
+  }
+}
+
+const games = [];
+function joinGame(clientId) {
+  for (game of games) {
+    if (game.isFull()) {
+      continue;
+    } else {
+      game.join(clientId);
+      return game;
+    }
+  }
+  game = new Game();
+  game.join(clientId);
+  games.push(game);
+}
+
+function findGame(clientId) {
+  for (game of games) {
+    if (game.isParticipant(clientId)) {
+      return game;
+    }
+  }
+}
 
 // Express
 const express = require("express");
@@ -54,27 +112,31 @@ console.log(`Websocket listening on port ${port}`);
 wss.on("connection", function connection(ws) {
   ws.id = uuidv1();
   console.log(`Websocket client ${ws.id} connected`);
-  game.join(ws.id);
+  joinGame(ws.id);
   ws.send(JSON.stringify({ status: "connected", id: ws.id }));
 
   ws.on("message", function incoming(event) {
     console.log(`Websocket received message ${event} from client ${ws.id}`);
     const message = JSON.parse(event);
-    game.update(ws.id, message.action);
+    findGame(ws.id).update(ws.id, message.action);
   });
 
   ws.on("close", function incoming() {
     console.log(`Websocket client ${ws.id} disconnected`);
-    game.leave(ws.id);
+    findGame(ws.id).leave(ws.id);
   });
 });
 
 // Game loop
 function gameLoop() {
-  const message = JSON.stringify({ status: "loop", clients: game.clients });
-
-  for (const client of wss.clients) {
-    client.send(message);
+  for (game of games) {
+    const message = JSON.stringify({ status: "loop", game: game });
+    for (const client of wss.clients) {
+      if (game.isParticipant(client.id)) {
+        client.send(message);
+      }
+    }
   }
 }
-setInterval(gameLoop, 1000 / 30);
+//setInterval(gameLoop, 1000 / 30);
+setInterval(gameLoop, 1000);
