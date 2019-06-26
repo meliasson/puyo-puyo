@@ -13,26 +13,33 @@ function updateView(boards) {
 
   boards.forEach((board, index) => {
     const squareSize = canvas.width / 16;
+    const offsetX = (index * canvas.width) / 2 + squareSize;
+    const offsetY = squareSize * 2;
+    context.strokeStyle = "#FFFFFF";
+    context.lineWidth = 2;
+    context.fillStyle = "#FE4365";
 
     // Draw borders around the 12 * 6 board.
-    context.lineWidth = 2;
-    context.strokeStyle = "#FFFFFF";
     context.strokeRect(
-      (index * canvas.width) / 2 + squareSize * 1 - 2,
-      squareSize * 2 - 2,
+      offsetX - 2,
+      offsetY - 2,
       squareSize * 6 + 4,
       squareSize * 12 + 4
     );
 
-    // TODO: Draw the not yet existing board content.
-    /* context.fillStyle = "#FE4365";
-     * const squareSize = canvas.width / 20;
-     * context.fillRect(
-     *   client.position[0] * squareSize,
-     *   client.position[1] * squareSize,
-     *   squareSize,
-     *   squareSize
-     * ); */
+    // Draw board content.
+    board.forEach((row, rowIndex) => {
+      row.forEach((cell, columnIndex) => {
+        if (cell === 1) {
+          context.fillRect(
+            offsetX + rowIndex * squareSize,
+            offsetY + columnIndex * squareSize,
+            squareSize,
+            squareSize
+          );
+        }
+      });
+    });
   });
 }
 
@@ -45,9 +52,9 @@ function initView() {
 function initKeydownEventListener() {
   document.addEventListener("keydown", event => {
     if (event.keyCode === 87) {
-      ws.send(JSON.stringify({ action: "up" }));
+      ws.send(JSON.stringify({ action: "rotate" }));
     } else if (event.keyCode === 83) {
-      ws.send(JSON.stringify({ action: "down" }));
+      ws.send(JSON.stringify({ action: "drop" }));
     } else if (event.keyCode === 65) {
       ws.send(JSON.stringify({ action: "left" }));
     } else if (event.keyCode === 68) {
@@ -67,6 +74,7 @@ function initWebSocket() {
 
   ws.onmessage = event => {
     const message = JSON.parse(event.data);
+    console.log("Received message from server", message);
     if (message.status === "loop") {
       updateView(message.game.boards);
     }

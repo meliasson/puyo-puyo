@@ -1,13 +1,62 @@
-const port = process.env.PORT || 3100;
+class Puyo {
+  constructor(posX, posY) {
+    this.posX = posX;
+    this.posY = posY;
+    this.isSteerable = false;
+  }
+
+  toJSON() {
+    return 1;
+  }
+}
+
+class SteerablePuyo extends Puyo {
+  constructor(posX, posY) {
+    super(posX, posY);
+    this.isSteerable = true;
+  }
+}
 
 class Board {
   constructor() {
     this._grid = this._buildGrid(16, 6);
+    this._puyos = [new Puyo(0, 0), new SteerablePuyo(1, 0)];
 
-    // TODO: Initialize board with a piece of puyos and implement
-    // gravity (probably two loops: all puyos are pulled down all the
-    // time and the falling piece drops a bit slower) and react on
-    // user input.
+    this._puyos.forEach(puyo => {
+      this._grid[puyo.posX][puyo.posY] = puyo;
+    });
+
+    // TODO: Implement gravity with two loops: one for regular puyos,
+    // which are dropped all the time, and one for steerable puyous,
+    // which falls slower.
+  }
+
+  movePieceLeft() {
+    this._puyos.forEach(puyo => {
+      if (!puyo.isSteerable) {
+        return;
+      }
+
+      const oldPosX = puyo.posX;
+      const newPosX = oldPosX - 1;
+      puyo.posX = newPosX;
+      this._grid[oldPosX][puyo.posY] = null;
+      this._grid[newPosX][puyo.posY] = puyo;
+    });
+  }
+
+  movePieceRight() {
+    this._puyos.forEach(puyo => {
+      if (!puyo.isSteerable) {
+        return;
+      }
+
+      const oldPosX = puyo.posX;
+      const newPosX = oldPosX + 1;
+      puyo.posX = newPosX;
+      this._grid[oldPosX][puyo.posY] = null;
+      this._grid[newPosX][puyo.posY] = puyo;
+    });
   }
 
   _buildGrid(height, width) {
@@ -18,6 +67,7 @@ class Board {
         grid[i][j] = null;
       }
     }
+
     return grid;
   }
 
@@ -55,8 +105,10 @@ class Game {
       case "drop":
         break;
       case "left":
+        client.movePieceLeft();
         break;
       case "right":
+        client.movePieceRight();
         break;
       default:
         throw new Error("Unknown action");
@@ -90,6 +142,8 @@ function findGame(clientId) {
     }
   }
 }
+
+const port = process.env.PORT || 3100;
 
 // Express
 const express = require("express");
