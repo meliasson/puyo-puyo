@@ -10,52 +10,97 @@ class Puyo {
   }
 }
 
-class SteerablePuyo extends Puyo {
+class Piece {
   constructor(posX, posY) {
-    super(posX, posY);
-    this.isSteerable = true;
+    this._rotatingPuyo = new Puyo(posX, posY);
+    this._pivotingPuyo = new Puyo(posX, posY + 1);
+  }
+
+  moveLeft() {
+    this._rotatingPuyo.posX -= 1;
+    this._pivotingPuyo.posX -= 1;
+  }
+
+  moveRight() {
+    this._rotatingPuyo.posX += 1;
+    this._pivotingPuyo.posX += 1;
+  }
+
+  rotate() {
+    if (this._rotatingPuyo.posX === this._pivotingPuyo.posX) {
+      if (this._rotatingPuyo.posY === this._pivotingPuyo.posY - 1) {
+        // piece is vertical with rotating puyo on top
+        this._rotatingPuyo.posX += 1;
+        this._rotatingPuyo.posY += 1;
+        return;
+      } else {
+        // piece is vertical with pivoting puyo on top
+        this._rotatingPuyo.posX -= 1;
+        this._rotatingPuyo.posY -= 1;
+        return;
+      }
+    }
+    if (this._rotatingPuyo.posY === this._pivotingPuyo.posY) {
+      if (this._rotatingPuyo.posX === this._pivotingPuyo.posX - 1) {
+        // piece is horizontal with rotating puyo to the left
+        this._rotatingPuyo.posX += 1;
+        this._rotatingPuyo.posY -= 1;
+        return;
+      } else {
+        // piece is horizontal with rotating puyo to the right
+        this._rotatingPuyo.posX -= 1;
+        this._rotatingPuyo.posY += 1;
+        return;
+      }
+    }
+  }
+
+  puyos() {
+    return [this._rotatingPuyo, this._pivotingPuyo];
   }
 }
 
 class Board {
   constructor() {
     this._grid = this._buildGrid(16, 6);
-    this._puyos = [new Puyo(0, 0), new SteerablePuyo(2, 0)];
+    this._piece = new Piece(3, 0);
 
-    this._puyos.forEach(puyo => {
+    this._piece.puyos().forEach(puyo => {
       this._grid[puyo.posX][puyo.posY] = puyo;
     });
 
     // TODO: Implement gravity with two loops: one for regular puyos,
-    // which are dropped all the time, and one for steerable puyous,
+    // which are dropped all the time, and one for the steerabe piece,
     // which falls slower.
   }
 
   movePieceLeft() {
-    this._puyos.forEach(puyo => {
-      if (!puyo.isSteerable) {
-        return;
-      }
-
-      const oldPosX = puyo.posX;
-      const newPosX = oldPosX - 1;
-      puyo.posX = newPosX;
-      this._grid[oldPosX][puyo.posY] = null;
-      this._grid[newPosX][puyo.posY] = puyo;
+    this._piece.puyos().forEach(puyo => {
+      this._grid[puyo.posX][puyo.posY] = null;
+    });
+    this._piece.moveLeft();
+    this._piece.puyos().forEach(puyo => {
+      this._grid[puyo.posX][puyo.posY] = puyo;
     });
   }
 
   movePieceRight() {
-    this._puyos.forEach(puyo => {
-      if (!puyo.isSteerable) {
-        return;
-      }
+    this._piece.puyos().forEach(puyo => {
+      this._grid[puyo.posX][puyo.posY] = null;
+    });
+    this._piece.moveRight();
+    this._piece.puyos().forEach(puyo => {
+      this._grid[puyo.posX][puyo.posY] = puyo;
+    });
+  }
 
-      const oldPosX = puyo.posX;
-      const newPosX = oldPosX + 1;
-      puyo.posX = newPosX;
-      this._grid[oldPosX][puyo.posY] = null;
-      this._grid[newPosX][puyo.posY] = puyo;
+  rotatePiece() {
+    this._piece.puyos().forEach(puyo => {
+      this._grid[puyo.posX][puyo.posY] = null;
+    });
+    this._piece.rotate();
+    this._piece.puyos().forEach(puyo => {
+      this._grid[puyo.posX][puyo.posY] = puyo;
     });
   }
 
@@ -101,7 +146,7 @@ class Game {
     const board = this._boards.get(player.id);
     switch (action) {
       case "rotate":
-        break;
+        board.rotatePiece();
       case "drop":
         break;
       case "left":
