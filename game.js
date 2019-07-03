@@ -16,6 +16,10 @@ class Piece {
     this._pivotingPuyo = new Puyo(posX, posY + 1);
   }
 
+  puyos() {
+    return [this._rotatingPuyo, this._pivotingPuyo];
+  }
+
   moveLeft() {
     this._rotatingPuyo.posX -= 1;
     this._pivotingPuyo.posX -= 1;
@@ -27,36 +31,35 @@ class Piece {
   }
 
   rotate() {
-    if (this._rotatingPuyo.posX === this._pivotingPuyo.posX) {
-      if (this._rotatingPuyo.posY === this._pivotingPuyo.posY - 1) {
-        // piece is vertical with rotating puyo on top
-        this._rotatingPuyo.posX += 1;
-        this._rotatingPuyo.posY += 1;
-        return;
-      } else {
-        // piece is vertical with pivoting puyo on top
-        this._rotatingPuyo.posX -= 1;
-        this._rotatingPuyo.posY -= 1;
-        return;
-      }
-    }
     if (this._rotatingPuyo.posY === this._pivotingPuyo.posY) {
-      if (this._rotatingPuyo.posX === this._pivotingPuyo.posX - 1) {
-        // piece is horizontal with rotating puyo to the left
-        this._rotatingPuyo.posX += 1;
-        this._rotatingPuyo.posY -= 1;
-        return;
-      } else {
-        // piece is horizontal with rotating puyo to the right
-        this._rotatingPuyo.posX -= 1;
-        this._rotatingPuyo.posY += 1;
-        return;
-      }
+      this._rotateWhenHorizontal();
+    } else {
+      this._rotateWhenVertical();
     }
   }
 
-  puyos() {
-    return [this._rotatingPuyo, this._pivotingPuyo];
+  _rotateWhenHorizontal() {
+    if (this._rotatingPuyo.posX === this._pivotingPuyo.posX - 1) {
+      // Rotate puyo to the left.
+      this._rotatingPuyo.posX += 1;
+      this._rotatingPuyo.posY -= 1;
+    } else {
+      // Rotate puyo to the right.
+      this._rotatingPuyo.posX -= 1;
+      this._rotatingPuyo.posY += 1;
+    }
+  }
+
+  _rotateWhenVertical() {
+    if (this._rotatingPuyo.posY === this._pivotingPuyo.posY - 1) {
+      // Rotate top puyo.
+      this._rotatingPuyo.posX += 1;
+      this._rotatingPuyo.posY += 1;
+    } else {
+      // Rotate bottom puyo.
+      this._rotatingPuyo.posX -= 1;
+      this._rotatingPuyo.posY -= 1;
+    }
   }
 }
 
