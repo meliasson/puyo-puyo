@@ -22,19 +22,17 @@ console.log(`Websocket listening on port ${port}`);
 wss.on("connection", function connection(ws) {
   ws.id = uuidv1();
   console.log(`Websocket client ${ws.id} connected`);
-  game.join(ws);
+  ws.game = game.join(ws);
   ws.send(JSON.stringify({ status: "connected", id: ws.id }));
 
   ws.on("message", function incoming(event) {
     console.log(`Websocket received message ${event} from client ${ws.id}`);
     const message = JSON.parse(event);
-    game.find(ws).update(ws, message.action);
+    ws.game.update(ws, message.action);
   });
 
   ws.on("close", function incoming() {
     console.log(`Websocket client ${ws.id} disconnected`);
-    game.find(ws).leave(ws);
+    ws.game.leave(ws);
   });
 });
-
-game.run(wss.clients);

@@ -130,11 +130,15 @@ class Game {
   }
 
   join(player) {
-    this._boards.set(player.id, new Board());
+    this._boards.set(player, new Board());
+
+    if (this.isFull()) {
+      setInterval(() => this._step(), 1000);
+    }
   }
 
   leave(player) {
-    delete this._boards[player.id];
+    delete this._boards[player];
   }
 
   isFull() {
@@ -142,11 +146,11 @@ class Game {
   }
 
   isParticipant(player) {
-    return this._boards.has(player.id);
+    return this._boards.has(player);
   }
 
   update(player, action) {
-    const board = this._boards.get(player.id);
+    const board = this._boards.get(player);
     switch (action) {
       case "rotate":
         board.rotatePiece();
@@ -166,16 +170,27 @@ class Game {
   toJSON() {
     return { boards: Array.from(this._boards.values()) };
   }
+
+  _step() {
+    const message = JSON.stringify({ status: "loop", game: this.toJSON() });
+    for (const player of this._boards.keys()) {
+      player.send(message);
+    }
+  }
 }
 
 const games = [];
 
 function joinGame(player) {
-  if (findGame(player)) {
-    return;
+  // Attempt to re-join an existing game.
+  for (const game of games) {
+    if (game.isParticipant(player)) {
+      return game;
+    }
   }
 
-  for (game of games) {
+  // Attempt to join an existing game.
+  for (const game of games) {
     if (game.isFull()) {
       continue;
     } else {
@@ -183,37 +198,16 @@ function joinGame(player) {
       return game;
     }
   }
-  game = new Game();
+
+  // Create a new game.
+  const game = new Game();
   game.join(player);
   games.push(game);
+  return game;
 }
 
-function findGame(player) {
-  for (game of games) {
-    if (game.isParticipant(player)) {
-      return game;
-    }
-  }
-}
-
-function loopGames(players) {
-  for (game of games) {
-    const message = JSON.stringify({ status: "loop", game: game });
-    for (const player of players) {
-      if (game.isParticipant(player)) {
-        player.send(message);
-      }
-    }
-  }
-}
-
-function run(players) {
-  setInterval(loopGames, 1000 / 30, players);
-  // setInterval(loopGames, 1000, players);
-}
+function findGame(player) {}
 
 module.exports = {
-  find: findGame,
-  join: joinGame,
-  run
+  join: joinGame
 };
