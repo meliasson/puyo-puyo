@@ -12,64 +12,64 @@ class Puyo {
 
 class Piece {
   constructor(posX, posY) {
-    this._rotatingPuyo = new Puyo(posX, posY);
-    this._pivotingPuyo = new Puyo(posX, posY + 1);
+    this.rotatingPuyo = new Puyo(posX, posY);
+    this.pivotingPuyo = new Puyo(posX, posY + 1);
   }
 
   puyos() {
-    return [this._rotatingPuyo, this._pivotingPuyo];
+    return [this.rotatingPuyo, this.pivotingPuyo];
   }
 
   moveLeft() {
-    this._rotatingPuyo.posX -= 1;
-    this._pivotingPuyo.posX -= 1;
+    this.rotatingPuyo.posX -= 1;
+    this.pivotingPuyo.posX -= 1;
   }
 
   moveRight() {
-    this._rotatingPuyo.posX += 1;
-    this._pivotingPuyo.posX += 1;
+    this.rotatingPuyo.posX += 1;
+    this.pivotingPuyo.posX += 1;
   }
 
   rotate() {
-    if (this._rotatingPuyo.posY === this._pivotingPuyo.posY) {
-      this._rotateWhenHorizontal();
+    if (this.rotatingPuyo.posY === this.pivotingPuyo.posY) {
+      this.rotateWhenHorizontal();
     } else {
-      this._rotateWhenVertical();
+      this.rotateWhenVertical();
     }
   }
 
-  _rotateWhenHorizontal() {
-    if (this._rotatingPuyo.posX === this._pivotingPuyo.posX - 1) {
+  rotateWhenHorizontal() {
+    if (this.rotatingPuyo.posX === this.pivotingPuyo.posX - 1) {
       // Rotate puyo to the left.
-      this._rotatingPuyo.posX += 1;
-      this._rotatingPuyo.posY -= 1;
+      this.rotatingPuyo.posX += 1;
+      this.rotatingPuyo.posY -= 1;
     } else {
       // Rotate puyo to the right.
-      this._rotatingPuyo.posX -= 1;
-      this._rotatingPuyo.posY += 1;
+      this.rotatingPuyo.posX -= 1;
+      this.rotatingPuyo.posY += 1;
     }
   }
 
-  _rotateWhenVertical() {
-    if (this._rotatingPuyo.posY === this._pivotingPuyo.posY - 1) {
-      // Rotate top puyo.
-      this._rotatingPuyo.posX += 1;
-      this._rotatingPuyo.posY += 1;
+  rotateWhenVertical() {
+    if (this.rotatingPuyo.posY === this.pivotingPuyo.posY - 1) {
+      // Rotate puyo to the right.
+      this.rotatingPuyo.posX += 1;
+      this.rotatingPuyo.posY += 1;
     } else {
-      // Rotate bottom puyo.
-      this._rotatingPuyo.posX -= 1;
-      this._rotatingPuyo.posY -= 1;
+      // Rotate puyo to the left.
+      this.rotatingPuyo.posX -= 1;
+      this.rotatingPuyo.posY -= 1;
     }
   }
 }
 
 class Board {
   constructor() {
-    this._grid = this._buildGrid(16, 6);
-    this._piece = new Piece(3, 0);
+    this.grid = this.buildGrid(16, 6);
+    this.piece = new Piece(3, 0);
 
-    this._piece.puyos().forEach(puyo => {
-      this._grid[puyo.posX][puyo.posY] = puyo;
+    this.piece.puyos().forEach(puyo => {
+      this.grid[puyo.posX][puyo.posY] = puyo;
     });
 
     // TODO: Implement gravity with two loops: one for regular puyos,
@@ -78,40 +78,40 @@ class Board {
   }
 
   movePieceLeft() {
-    this._piece.puyos().forEach(puyo => {
-      this._grid[puyo.posX][puyo.posY] = null;
+    this.piece.puyos().forEach(puyo => {
+      this.grid[puyo.posX][puyo.posY] = null;
     });
-    this._piece.moveLeft();
-    this._piece.puyos().forEach(puyo => {
-      this._grid[puyo.posX][puyo.posY] = puyo;
+    this.piece.moveLeft();
+    this.piece.puyos().forEach(puyo => {
+      this.grid[puyo.posX][puyo.posY] = puyo;
     });
   }
 
   movePieceRight() {
-    this._piece.puyos().forEach(puyo => {
-      this._grid[puyo.posX][puyo.posY] = null;
+    this.piece.puyos().forEach(puyo => {
+      this.grid[puyo.posX][puyo.posY] = null;
     });
-    this._piece.moveRight();
-    this._piece.puyos().forEach(puyo => {
-      this._grid[puyo.posX][puyo.posY] = puyo;
+    this.piece.moveRight();
+    this.piece.puyos().forEach(puyo => {
+      this.grid[puyo.posX][puyo.posY] = puyo;
     });
   }
 
   rotatePiece() {
-    this._piece.puyos().forEach(puyo => {
-      this._grid[puyo.posX][puyo.posY] = null;
+    this.piece.puyos().forEach(puyo => {
+      this.grid[puyo.posX][puyo.posY] = null;
     });
-    this._piece.rotate();
-    this._piece.puyos().forEach(puyo => {
-      this._grid[puyo.posX][puyo.posY] = puyo;
+    this.piece.rotate();
+    this.piece.puyos().forEach(puyo => {
+      this.grid[puyo.posX][puyo.posY] = puyo;
     });
   }
 
-  _buildGrid(height, width) {
+  buildGrid(height, width) {
     const grid = [];
-    for (let i = 0; i < height; i++) {
+    for (let i = 0; i < height; i += 1) {
       grid[i] = [];
-      for (let j = 0; j < width; j++) {
+      for (let j = 0; j < width; j += 1) {
         grid[i][j] = null;
       }
     }
@@ -120,40 +120,41 @@ class Board {
   }
 
   toJSON() {
-    return this._grid;
+    return this.grid;
   }
 }
 
 class Game {
   constructor() {
-    this._boards = new Map();
+    this.boards = new Map();
   }
 
   join(player) {
-    this._boards.set(player, new Board());
+    this.boards.set(player, new Board());
 
     if (this.isFull()) {
-      setInterval(() => this._step(), 1000);
+      setInterval(() => this.step(), 1000);
     }
   }
 
   leave(player) {
-    delete this._boards[player];
+    delete this.boards[player];
   }
 
   isFull() {
-    return this._boards.size == 2;
+    return this.boards.size === 2;
   }
 
   isParticipant(player) {
-    return this._boards.has(player);
+    return this.boards.has(player);
   }
 
   update(player, action) {
-    const board = this._boards.get(player);
+    const board = this.boards.get(player);
     switch (action) {
       case "rotate":
         board.rotatePiece();
+        break;
       case "drop":
         break;
       case "left":
@@ -168,45 +169,55 @@ class Game {
   }
 
   toJSON() {
-    return { boards: Array.from(this._boards.values()) };
+    return { boards: Array.from(this.boards.values()) };
   }
 
-  _step() {
+  step() {
     const message = JSON.stringify({ status: "loop", game: this.toJSON() });
-    for (const player of this._boards.keys()) {
+    Array.from(this.boards.keys()).forEach(player => {
       player.send(message);
-    }
+    });
   }
 }
 
 const games = [];
 
 function joinGame(player) {
+  //
   // Attempt to re-join an existing game.
-  for (const game of games) {
-    if (game.isParticipant(player)) {
-      return game;
-    }
+  //
+
+  const gameToRejoin = games.find(game => {
+    return game.isParticipant(player);
+  });
+
+  if (gameToRejoin) {
+    gameToRejoin.join(player);
+    return gameToRejoin;
   }
 
+  //
   // Attempt to join an existing game.
-  for (const game of games) {
-    if (game.isFull()) {
-      continue;
-    } else {
-      game.join(player);
-      return game;
-    }
+  //
+
+  const gameToJoin = games.find(game => {
+    return !game.isFull();
+  });
+
+  if (gameToJoin) {
+    gameToJoin.join(player);
+    return gameToJoin;
   }
 
+  //
   // Create a new game.
+  //
+
   const game = new Game();
   game.join(player);
   games.push(game);
   return game;
 }
-
-function findGame(player) {}
 
 module.exports = {
   join: joinGame
