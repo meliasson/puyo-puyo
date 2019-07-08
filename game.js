@@ -2,7 +2,6 @@ class Puyo {
   constructor(posX, posY) {
     this.posX = posX;
     this.posY = posY;
-    this.isSteerable = false;
   }
 
   toJSON() {
@@ -40,11 +39,11 @@ class Piece {
 
   rotateWhenHorizontal() {
     if (this.rotatingPuyo.posX === this.pivotingPuyo.posX - 1) {
-      // Rotate puyo to the left.
+      // Rotate puyo to top.
       this.rotatingPuyo.posX += 1;
       this.rotatingPuyo.posY -= 1;
     } else {
-      // Rotate puyo to the right.
+      // Rotate puyo to bottom.
       this.rotatingPuyo.posX -= 1;
       this.rotatingPuyo.posY += 1;
     }
@@ -52,11 +51,11 @@ class Piece {
 
   rotateWhenVertical() {
     if (this.rotatingPuyo.posY === this.pivotingPuyo.posY - 1) {
-      // Rotate puyo to the right.
+      // Rotate puyo to right.
       this.rotatingPuyo.posX += 1;
       this.rotatingPuyo.posY += 1;
     } else {
-      // Rotate puyo to the left.
+      // Rotate puyo to left.
       this.rotatingPuyo.posX -= 1;
       this.rotatingPuyo.posY -= 1;
     }
