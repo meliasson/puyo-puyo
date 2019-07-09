@@ -30,15 +30,23 @@ class Piece {
     return [this.pivotingPuyo, this.rotatingPuyo];
   }
 
-  rotate() {
+  rotateClockwise() {
     if (this.rotatingPuyo.posY === this.pivotingPuyo.posY) {
-      this.rotateWhenHorizontal();
+      this.rotateClockwiseWhenHorizontal();
     } else {
-      this.rotateWhenVertical();
+      this.rotateClockwiseWhenVertical();
     }
   }
 
-  rotateWhenHorizontal() {
+  rotateCounterClockwise() {
+    if (this.rotatingPuyo.posY === this.pivotingPuyo.posY) {
+      this.rotateCounterClockwiseWhenHorizontal();
+    } else {
+      this.rotateCounterClockwiseWhenVertical();
+    }
+  }
+
+  rotateClockwiseWhenHorizontal() {
     if (this.rotatingPuyo.posX === this.pivotingPuyo.posX - 1) {
       // Rotate puyo to top.
       this.rotatingPuyo.posX += 1;
@@ -50,7 +58,7 @@ class Piece {
     }
   }
 
-  rotateWhenVertical() {
+  rotateClockwiseWhenVertical() {
     if (this.rotatingPuyo.posY === this.pivotingPuyo.posY - 1) {
       // Rotate puyo to right.
       this.rotatingPuyo.posX += 1;
@@ -58,6 +66,26 @@ class Piece {
     } else {
       // Rotate puyo to left.
       this.rotatingPuyo.posX -= 1;
+      this.rotatingPuyo.posY -= 1;
+    }
+  }
+
+  rotateCounterClockwiseWhenHorizontal() {
+    if (this.rotatingPuyo.posX === this.pivotingPuyo.posX - 1) {
+      this.rotatingPuyo.posX += 1;
+      this.rotatingPuyo.posY += 1;
+    } else {
+      this.rotatingPuyo.posX -= 1;
+      this.rotatingPuyo.posY -= 1;
+    }
+  }
+
+  rotateCounterClockwiseWhenVertical() {
+    if (this.rotatingPuyo.posY === this.pivotingPuyo.posY - 1) {
+      this.rotatingPuyo.posX -= 1;
+      this.rotatingPuyo.posY += 1;
+    } else {
+      this.rotatingPuyo.posX += 1;
       this.rotatingPuyo.posY -= 1;
     }
   }
@@ -95,6 +123,15 @@ class Board {
     return invalidMove;
   }
 
+  isRotationInvalid() {
+    this.piece.rotateClockwise();
+
+    const invalidMove = this.isMoveInvalid();
+    this.piece.rotateCounterClockwise();
+
+    return invalidMove;
+  }
+
   movePieceLeft() {
     if (this.isLeftMoveInvalid()) {
       return;
@@ -128,11 +165,15 @@ class Board {
   }
 
   rotatePiece() {
+    if (this.isRotationInvalid()) {
+      return;
+    }
+
     this.piece.puyos().forEach(puyo => {
       this.grid[puyo.posX][puyo.posY] = null;
     });
 
-    this.piece.rotate();
+    this.piece.rotateClockwise();
 
     this.piece.puyos().forEach(puyo => {
       this.grid[puyo.posX][puyo.posY] = puyo;
