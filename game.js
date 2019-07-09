@@ -1,7 +1,8 @@
 class Puyo {
-  constructor(posX, posY) {
+  constructor(posX, posY, partOfPiece = false) {
     this.posX = posX;
     this.posY = posY;
+    this.partOfPiece = partOfPiece;
   }
 
   toJSON() {
@@ -11,22 +12,22 @@ class Puyo {
 
 class Piece {
   constructor(posX, posY) {
-    this.rotatingPuyo = new Puyo(posX, posY);
-    this.pivotingPuyo = new Puyo(posX, posY + 1);
-  }
-
-  puyos() {
-    return [this.rotatingPuyo, this.pivotingPuyo];
+    this.pivotingPuyo = new Puyo(posX, posY + 1, true);
+    this.rotatingPuyo = new Puyo(posX, posY, true);
   }
 
   moveLeft() {
-    this.rotatingPuyo.posX -= 1;
     this.pivotingPuyo.posX -= 1;
+    this.rotatingPuyo.posX -= 1;
   }
 
   moveRight() {
-    this.rotatingPuyo.posX += 1;
     this.pivotingPuyo.posX += 1;
+    this.rotatingPuyo.posX += 1;
+  }
+
+  puyos() {
+    return [this.pivotingPuyo, this.rotatingPuyo];
   }
 
   rotate() {
@@ -72,25 +73,55 @@ class Board {
     });
 
     // TODO: Implement gravity with two loops: one for regular puyos,
-    // which are dropped all the time, and one for the steerabe piece,
-    // which falls slower.
+    // which are dropped all the time, and one for the piece, which
+    // falls slower.
+  }
+
+  isLeftMoveInvalid() {
+    this.piece.moveLeft();
+
+    const invalidMove = this.isMoveInvalid();
+    this.piece.moveRight();
+
+    return invalidMove;
+  }
+
+  isRightMoveInvalid() {
+    this.piece.moveRight();
+
+    const invalidMove = this.isMoveInvalid();
+    this.piece.moveLeft();
+
+    return invalidMove;
   }
 
   movePieceLeft() {
+    if (this.isLeftMoveInvalid()) {
+      return;
+    }
+
     this.piece.puyos().forEach(puyo => {
       this.grid[puyo.posX][puyo.posY] = null;
     });
+
     this.piece.moveLeft();
+
     this.piece.puyos().forEach(puyo => {
       this.grid[puyo.posX][puyo.posY] = puyo;
     });
   }
 
   movePieceRight() {
+    if (this.isRightMoveInvalid()) {
+      return;
+    }
+
     this.piece.puyos().forEach(puyo => {
       this.grid[puyo.posX][puyo.posY] = null;
     });
+
     this.piece.moveRight();
+
     this.piece.puyos().forEach(puyo => {
       this.grid[puyo.posX][puyo.posY] = puyo;
     });
@@ -100,10 +131,33 @@ class Board {
     this.piece.puyos().forEach(puyo => {
       this.grid[puyo.posX][puyo.posY] = null;
     });
+
     this.piece.rotate();
+
     this.piece.puyos().forEach(puyo => {
       this.grid[puyo.posX][puyo.posY] = puyo;
     });
+  }
+
+  toJSON() {
+    return this.grid;
+  }
+
+  isMoveInvalid() {
+    const puyoOutsideBoundaries = this.piece.puyos().find(puyo => {
+      return puyo.posX < 0 || puyo.posY < 0 || puyo.posX > 5 || puyo.posY > 15;
+    });
+
+    if (puyoOutsideBoundaries) {
+      return true;
+    }
+
+    const puyoColliding = this.piece.puyos().find(puyo => {
+      const cell = this.grid[puyo.posX][puyo.posY];
+      return cell !== null && !cell.partOfPiece;
+    });
+
+    return puyoColliding;
   }
 
   buildGrid(height, width) {
@@ -117,27 +171,11 @@ class Board {
 
     return grid;
   }
-
-  toJSON() {
-    return this.grid;
-  }
 }
 
 class Game {
   constructor() {
     this.boards = new Map();
-  }
-
-  join(player) {
-    this.boards.set(player, new Board());
-
-    if (this.isFull()) {
-      setInterval(() => this.step(), 1000);
-    }
-  }
-
-  leave(player) {
-    delete this.boards[player];
   }
 
   isFull() {
@@ -146,6 +184,22 @@ class Game {
 
   isParticipant(player) {
     return this.boards.has(player);
+  }
+
+  join(player) {
+    this.boards.set(player, new Board());
+
+    if (this.isFull()) {
+      setInterval(() => this.step(), 1000 / 30);
+    }
+  }
+
+  leave(player) {
+    delete this.boards[player];
+  }
+
+  toJSON() {
+    return { boards: Array.from(this.boards.values()) };
   }
 
   update(player, action) {
@@ -165,10 +219,6 @@ class Game {
       default:
         throw new Error("Unknown action");
     }
-  }
-
-  toJSON() {
-    return { boards: Array.from(this.boards.values()) };
   }
 
   step() {
