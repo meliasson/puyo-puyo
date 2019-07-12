@@ -32,8 +32,8 @@ function updateView(boards) {
       row.forEach((cell, columnIndex) => {
         if (cell === 1) {
           context.fillRect(
-            offsetX + rowIndex * squareSize,
-            offsetY + columnIndex * squareSize,
+            offsetX + columnIndex * squareSize,
+            offsetY + rowIndex * squareSize,
             squareSize,
             squareSize
           );

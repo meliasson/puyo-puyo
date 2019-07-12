@@ -16,6 +16,11 @@ class Piece {
     this.rotatingPuyo = new Puyo(posX, posY, true);
   }
 
+  moveDown() {
+    this.pivotingPuyo.posY += 1;
+    this.rotatingPuyo.posY += 1;
+  }
+
   moveLeft() {
     this.pivotingPuyo.posX -= 1;
     this.rotatingPuyo.posX -= 1;
@@ -24,6 +29,11 @@ class Piece {
   moveRight() {
     this.pivotingPuyo.posX += 1;
     this.rotatingPuyo.posX += 1;
+  }
+
+  moveUp() {
+    this.pivotingPuyo.posY -= 1;
+    this.rotatingPuyo.posY -= 1;
   }
 
   puyos() {
@@ -97,16 +107,23 @@ class Piece {
 
 class Board {
   constructor() {
-    this.grid = this.buildGrid(16, 6);
-    this.piece = new Piece(3, 0);
+    this.grid = this.buildGrid(12, 6);
 
+    this.piece = new Piece(3, 0);
     this.piece.puyos().forEach(puyo => {
-      this.grid[puyo.posX][puyo.posY] = puyo;
+      this.grid[puyo.posY][puyo.posX] = puyo;
     });
 
-    // TODO: Implement gravity with two loops: one for regular puyos,
-    // which are dropped all the time, and one for the piece, which
-    // falls slower.
+    this.lastDownMoveAt = Date.now();
+  }
+
+  isDownMoveInvalid() {
+    this.piece.moveDown();
+
+    const invalidMove = this.isMoveInvalid();
+    this.piece.moveUp();
+
+    return invalidMove;
   }
 
   isLeftMoveInvalid() {
@@ -136,19 +153,36 @@ class Board {
     return invalidMove;
   }
 
+  movePieceDown() {
+    if (this.isDownMoveInvalid()) {
+      // TODO: Dismantle piece into regular puyos here.
+      return;
+    }
+
+    this.piece.puyos().forEach(puyo => {
+      this.grid[puyo.posY][puyo.posX] = null;
+    });
+
+    this.piece.moveDown();
+
+    this.piece.puyos().forEach(puyo => {
+      this.grid[puyo.posY][puyo.posX] = puyo;
+    });
+  }
+
   movePieceLeft() {
     if (this.isLeftMoveInvalid()) {
       return;
     }
 
     this.piece.puyos().forEach(puyo => {
-      this.grid[puyo.posX][puyo.posY] = null;
+      this.grid[puyo.posY][puyo.posX] = null;
     });
 
     this.piece.moveLeft();
 
     this.piece.puyos().forEach(puyo => {
-      this.grid[puyo.posX][puyo.posY] = puyo;
+      this.grid[puyo.posY][puyo.posX] = puyo;
     });
   }
 
@@ -158,13 +192,13 @@ class Board {
     }
 
     this.piece.puyos().forEach(puyo => {
-      this.grid[puyo.posX][puyo.posY] = null;
+      this.grid[puyo.posY][puyo.posX] = null;
     });
 
     this.piece.moveRight();
 
     this.piece.puyos().forEach(puyo => {
-      this.grid[puyo.posX][puyo.posY] = puyo;
+      this.grid[puyo.posY][puyo.posX] = puyo;
     });
   }
 
@@ -174,14 +208,23 @@ class Board {
     }
 
     this.piece.puyos().forEach(puyo => {
-      this.grid[puyo.posX][puyo.posY] = null;
+      this.grid[puyo.posY][puyo.posX] = null;
     });
 
     this.piece.rotateClockwise();
 
     this.piece.puyos().forEach(puyo => {
-      this.grid[puyo.posX][puyo.posY] = puyo;
+      this.grid[puyo.posY][puyo.posX] = puyo;
     });
+  }
+
+  step() {
+    const now = Date.now();
+    const delta = now - this.lastDownMoveAt;
+    if (delta > 1000) {
+      this.movePieceDown();
+      this.lastDownMoveAt = now;
+    }
   }
 
   toJSON() {
@@ -190,7 +233,7 @@ class Board {
 
   isMoveInvalid() {
     const puyoOutsideBoundaries = this.piece.puyos().find(puyo => {
-      return puyo.posX < 0 || puyo.posY < 0 || puyo.posX > 5 || puyo.posY > 15;
+      return puyo.posX < 0 || puyo.posY < 0 || puyo.posX > 5 || puyo.posY > 11;
     });
 
     if (puyoOutsideBoundaries) {
@@ -198,7 +241,7 @@ class Board {
     }
 
     const puyoColliding = this.piece.puyos().find(puyo => {
-      const cell = this.grid[puyo.posX][puyo.posY];
+      const cell = this.grid[puyo.posY][puyo.posX];
       return cell !== null && !cell.partOfPiece;
     });
 
@@ -267,7 +310,12 @@ class Game {
   }
 
   step() {
+    this.boards.forEach(board => {
+      board.step();
+    });
+
     const message = JSON.stringify({ status: "loop", game: this.toJSON() });
+
     Array.from(this.boards.keys()).forEach(player => {
       player.send(message);
     });
