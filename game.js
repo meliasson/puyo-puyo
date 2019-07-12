@@ -72,9 +72,11 @@ class Piece {
 
   rotateCounterClockwiseWhenHorizontal() {
     if (this.rotatingPuyo.posX === this.pivotingPuyo.posX - 1) {
+      // Rotate puyo to bottom.
       this.rotatingPuyo.posX += 1;
       this.rotatingPuyo.posY += 1;
     } else {
+      // Rotate puyo to top.
       this.rotatingPuyo.posX -= 1;
       this.rotatingPuyo.posY -= 1;
     }
@@ -82,9 +84,11 @@ class Piece {
 
   rotateCounterClockwiseWhenVertical() {
     if (this.rotatingPuyo.posY === this.pivotingPuyo.posY - 1) {
+      // Rotate puyo to left.
       this.rotatingPuyo.posX -= 1;
       this.rotatingPuyo.posY += 1;
     } else {
+      // Rotate puyo to right.
       this.rotatingPuyo.posX += 1;
       this.rotatingPuyo.posY -= 1;
     }
@@ -230,7 +234,7 @@ class Game {
   join(player) {
     this.boards.set(player, new Board());
 
-    if (this.isFull()) {
+    if (this.boards.size > 0) {
       setInterval(() => this.step(), 1000 / 30);
     }
   }
