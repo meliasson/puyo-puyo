@@ -24,7 +24,7 @@ const expressServer = app.listen(port, () => {
 
 const uuidv1 = require("uuid/v1");
 const WebSocket = require("ws");
-const game = require("./game");
+const gameManager = require("./game-manager");
 
 const wss = new WebSocket.Server({ server: expressServer });
 console.log(`Websocket listening on port ${port}`);
@@ -33,17 +33,17 @@ console.log(`Websocket listening on port ${port}`);
 wss.on("connection", function connection(ws) {
   ws.id = uuidv1();
   console.log(`Websocket client ${ws.id} connected`);
-  ws.game = game.join(ws);
+  gameManager.joinGame(ws);
   ws.send(JSON.stringify({ status: "connected", id: ws.id }));
 
   ws.on("message", function incoming(event) {
     console.log(`Websocket received message ${event} from client ${ws.id}`);
     const message = JSON.parse(event);
-    ws.game.update(ws, message.action);
+    gameManager.updateGame(ws, message.action);
   });
 
   ws.on("close", function incoming() {
     console.log(`Websocket client ${ws.id} disconnected`);
-    ws.game.leave(ws);
+    gameManager.leaveGame(ws);
   });
 });
