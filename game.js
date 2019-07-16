@@ -5,6 +5,10 @@ class Puyo {
     this.partOfPiece = partOfPiece;
   }
 
+  removeFromPiece() {
+    this.partOfPiece = false;
+  }
+
   toJSON() {
     return 1;
   }
@@ -12,35 +16,68 @@ class Puyo {
 
 class Piece {
   constructor(posX, posY) {
+    this.isDismantled = false;
     this.pivotingPuyo = new Puyo(posX, posY + 1, true);
     this.rotatingPuyo = new Puyo(posX, posY, true);
   }
 
+  dismantle() {
+    this.isDismantled = true;
+    this.pivotingPuyo.removeFromPiece();
+    this.rotatingPuyo.removeFromPiece();
+  }
+
   moveDown() {
+    // TODO: Consider implementing a NullPiece so we don't need guard
+    // clauses like this one.
+    if (this.isDismantled) {
+      return;
+    }
+
     this.pivotingPuyo.posY += 1;
     this.rotatingPuyo.posY += 1;
   }
 
   moveLeft() {
+    if (this.isDismantled) {
+      return;
+    }
+
     this.pivotingPuyo.posX -= 1;
     this.rotatingPuyo.posX -= 1;
   }
 
   moveRight() {
+    if (this.isDismantled) {
+      return;
+    }
+
     this.pivotingPuyo.posX += 1;
     this.rotatingPuyo.posX += 1;
   }
 
   moveUp() {
+    if (this.isDismantled) {
+      return;
+    }
+
     this.pivotingPuyo.posY -= 1;
     this.rotatingPuyo.posY -= 1;
   }
 
   puyos() {
+    if (this.isDismantled) {
+      return [];
+    }
+
     return [this.pivotingPuyo, this.rotatingPuyo];
   }
 
   rotateClockwise() {
+    if (this.isDismantled) {
+      return;
+    }
+
     if (this.rotatingPuyo.posY === this.pivotingPuyo.posY) {
       this.rotateClockwiseWhenHorizontal();
     } else {
@@ -49,6 +86,10 @@ class Piece {
   }
 
   rotateCounterClockwise() {
+    if (this.isDismantled) {
+      return;
+    }
+
     if (this.rotatingPuyo.posY === this.pivotingPuyo.posY) {
       this.rotateCounterClockwiseWhenHorizontal();
     } else {
@@ -114,7 +155,8 @@ class Board {
       this.grid[puyo.posY][puyo.posX] = puyo;
     });
 
-    this.lastDownMoveAt = Date.now();
+    this.steppedAt = Date.now();
+    this.state = "pieceDown";
   }
 
   isDownMoveInvalid() {
@@ -122,6 +164,15 @@ class Board {
 
     const invalidMove = this.isMoveInvalid();
     this.piece.moveUp();
+
+    return invalidMove;
+  }
+
+  isPuyoDownMoveInvalid(puyo) {
+    puyo.posY += 1;
+
+    const invalidMove = this.isPuyoPositionInvalid(puyo);
+    puyo.posY -= 1;
 
     return invalidMove;
   }
@@ -154,8 +205,21 @@ class Board {
   }
 
   movePieceDown() {
+    // TODO: Should we do this check _once_ in a central place
+    // responsible for state switching instead?.
+    if (this.piece.isDismantled) {
+      // TODO: Create a function for piece spawning and re-use it here
+      // and in constructor? Perhaps constructor should invoke central
+      // state switching function immediately instead of spawning piece
+      // etc?
+      this.piece = new Piece(3, 0);
+      this.piece.puyos().forEach(puyo => {
+        this.grid[puyo.posY][puyo.posX] = puyo;
+      });
+    }
+
     if (this.isDownMoveInvalid()) {
-      // TODO: Dismantle piece into regular puyos here.
+      this.switchStateFromPieceDownToPuyosDown();
       return;
     }
 
@@ -168,6 +232,11 @@ class Board {
     this.piece.puyos().forEach(puyo => {
       this.grid[puyo.posY][puyo.posX] = puyo;
     });
+  }
+
+  switchStateFromPieceDownToPuyosDown() {
+    this.piece.dismantle();
+    this.state = "puyosDown";
   }
 
   movePieceLeft() {
@@ -202,6 +271,41 @@ class Board {
     });
   }
 
+  // TODO: Continue here
+  movePuyosDown() {
+    let isPuyoMovedDown = false;
+    this.grid.forEach(row => {
+      row.forEach(puyo => {
+        // TODO: Consider implementing a NullPuyo so we don't have to
+        // check for null in places like this.
+        if (puyo !== null && !puyo.partOfPiece) {
+          if (this.isPuyoDownMoveInvalid(puyo)) {
+            return;
+          }
+
+          this.grid[puyo.posY][puyo.posX] = null;
+
+          // TODO: Make this a function?
+          puyo.posY += 1;
+
+          this.grid[puyo.posY][puyo.posX] = puyo;
+
+          isPuyoMovedDown = true;
+        }
+      });
+    });
+
+    if (isPuyoMovedDown) {
+      this.state = "puyosExplode";
+    } else {
+      this.state = "pieceDown";
+    }
+  }
+
+  letPuyosExplode() {
+    this.state = "puyosDown";
+  }
+
   rotatePiece() {
     if (this.isRotationInvalid()) {
       return;
@@ -219,11 +323,20 @@ class Board {
   }
 
   step() {
+    console.log(this.state);
     const now = Date.now();
-    const delta = now - this.lastDownMoveAt;
-    if (delta > 1000) {
+    const timeSinceLastStep = now - this.steppedAt;
+
+    if (this.state === "pieceDown" && timeSinceLastStep > 1000) {
       this.movePieceDown();
-      this.lastDownMoveAt = now;
+      this.steppedAt = now;
+    } else if (this.state === "puyosDown" && timeSinceLastStep > 300) {
+      this.movePuyosDown();
+      this.steppedAt = now;
+    } else if (this.state === "puyosExplode" && timeSinceLastStep > 300) {
+      console.log("State is explodePuyos");
+      this.letPuyosExplode();
+      // TODO: Go back to state dropPuyos.
     }
   }
 
@@ -246,6 +359,19 @@ class Board {
     });
 
     return puyoColliding;
+  }
+
+  isPuyoPositionInvalid(puyo) {
+    if (puyo.posX < 0 || puyo.posY < 0 || puyo.posX > 5 || puyo.posY > 11) {
+      return true;
+    }
+
+    const otherPuyo = this.grid[puyo.posY][puyo.posX];
+    if (otherPuyo !== null && !otherPuyo.partOfPiece) {
+      return true;
+    }
+
+    return false;
   }
 
   buildGrid(height, width) {
