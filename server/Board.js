@@ -58,6 +58,14 @@ module.exports = class Board {
     return invalidMove;
   }
 
+  dropPiece() {
+    if (this.piece.isDismantled) {
+      return;
+    }
+
+    this.switchStateFromPieceDownToPuyosDown();
+  }
+
   movePieceDown() {
     // TODO: Should we do this check _once_ in a central place
     // responsible for state switching instead?.
@@ -127,26 +135,33 @@ module.exports = class Board {
 
   movePuyosDown() {
     let isPuyoMovedDown = false;
-    this.grid.forEach(row => {
-      row.forEach(puyo => {
-        // TODO: Consider implementing a NullPuyo so we don't have to
-        // check for null in places like this.
-        if (puyo !== null && !puyo.partOfPiece) {
-          if (this.isPuyoDownMoveInvalid(puyo)) {
-            return;
+    // TODO: Figure out if we can express the need to loop backwards
+    // with code. We do it because otherwise we'll move a puyo to the
+    // next row and when we get to the next row we'll immediately move
+    // it again, resulting in puyos that move too fast.
+    this.grid
+      .slice()
+      .reverse()
+      .forEach(row => {
+        row.forEach(puyo => {
+          // TODO: Consider implementing a NullPuyo so we don't have to
+          // check for null in places like this.
+          if (puyo !== null && !puyo.partOfPiece) {
+            if (this.isPuyoDownMoveInvalid(puyo)) {
+              return;
+            }
+
+            this.grid[puyo.posY][puyo.posX] = null;
+
+            // TODO: Make this a function?
+            puyo.posY += 1;
+
+            this.grid[puyo.posY][puyo.posX] = puyo;
+
+            isPuyoMovedDown = true;
           }
-
-          this.grid[puyo.posY][puyo.posX] = null;
-
-          // TODO: Make this a function?
-          puyo.posY += 1;
-
-          this.grid[puyo.posY][puyo.posX] = puyo;
-
-          isPuyoMovedDown = true;
-        }
+        });
       });
-    });
 
     if (isPuyoMovedDown) {
       this.state = "puyosExplode";
@@ -183,12 +198,13 @@ module.exports = class Board {
     if (this.state === "pieceDown" && timeSinceLastStep > 1000) {
       this.movePieceDown();
       this.steppedAt = now;
-    } else if (this.state === "puyosDown" && timeSinceLastStep > 300) {
+    } else if (this.state === "puyosDown") {
       this.movePuyosDown();
       this.steppedAt = now;
-    } else if (this.state === "puyosExplode" && timeSinceLastStep > 300) {
+    } else if (this.state === "puyosExplode") {
       console.log("State is explodePuyos");
       this.letPuyosExplode();
+      this.steppedAt = now;
       // TODO: Go back to state dropPuyos.
     }
   }

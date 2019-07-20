@@ -32,6 +32,7 @@ module.exports = class Game {
         board.rotatePiece();
         break;
       case "drop":
+        board.dropPiece();
         break;
       case "left":
         board.movePieceLeft();
