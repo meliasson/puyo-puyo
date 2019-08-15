@@ -78,6 +78,7 @@ module.exports = class Board {
       this.piece.puyos().forEach(puyo => {
         this.grid[puyo.posY][puyo.posX] = puyo;
       });
+      return;
     }
 
     if (this.isDownMoveInvalid()) {
@@ -191,7 +192,6 @@ module.exports = class Board {
   }
 
   step() {
-    console.log(this.state);
     const now = Date.now();
     const timeSinceLastStep = now - this.steppedAt;
 
@@ -202,7 +202,6 @@ module.exports = class Board {
       this.movePuyosDown();
       this.steppedAt = now;
     } else if (this.state === "puyosExplode") {
-      console.log("State is explodePuyos");
       this.letPuyosExplode();
       this.steppedAt = now;
       // TODO: Go back to state dropPuyos.
