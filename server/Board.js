@@ -13,11 +13,46 @@ module.exports = class Board {
     this.state = "pieceDown";
   }
 
-  isDownMoveInvalid() {
+  dropPiece() {
+    if (this.piece.isDismantled) {
+      return;
+    }
+
+    this.switchStateFromPieceDownToPuyosDown();
+  }
+
+  isPieceDownMoveInvalid() {
     this.piece.moveDown();
 
-    const invalidMove = this.isMoveInvalid();
+    const invalidMove = this.isPiecePositionInvalid();
     this.piece.moveUp();
+
+    return invalidMove;
+  }
+
+  isPieceLeftMoveInvalid() {
+    this.piece.moveLeft();
+
+    const invalidMove = this.isPiecePositionInvalid();
+    this.piece.moveRight();
+
+    return invalidMove;
+  }
+
+  isPieceRightMoveInvalid() {
+    this.piece.moveRight();
+
+    const invalidMove = this.isPiecePositionInvalid();
+    this.piece.moveLeft();
+
+    return invalidMove;
+  }
+
+  isPieceRotationInvalid() {
+    this.piece.rotateClockwise();
+
+    const invalidMove = this.isPiecePositionInvalid();
+    this.piece.rotateCounterClockwise();
 
     return invalidMove;
   }
@@ -31,39 +66,8 @@ module.exports = class Board {
     return invalidMove;
   }
 
-  isLeftMoveInvalid() {
-    this.piece.moveLeft();
-
-    const invalidMove = this.isMoveInvalid();
-    this.piece.moveRight();
-
-    return invalidMove;
-  }
-
-  isRightMoveInvalid() {
-    this.piece.moveRight();
-
-    const invalidMove = this.isMoveInvalid();
-    this.piece.moveLeft();
-
-    return invalidMove;
-  }
-
-  isRotationInvalid() {
-    this.piece.rotateClockwise();
-
-    const invalidMove = this.isMoveInvalid();
-    this.piece.rotateCounterClockwise();
-
-    return invalidMove;
-  }
-
-  dropPiece() {
-    if (this.piece.isDismantled) {
-      return;
-    }
-
-    this.switchStateFromPieceDownToPuyosDown();
+  letPuyosExplode() {
+    this.state = "puyosDown";
   }
 
   movePieceDown() {
@@ -81,7 +85,7 @@ module.exports = class Board {
       return;
     }
 
-    if (this.isDownMoveInvalid()) {
+    if (this.isPieceDownMoveInvalid()) {
       this.switchStateFromPieceDownToPuyosDown();
       return;
     }
@@ -97,13 +101,8 @@ module.exports = class Board {
     });
   }
 
-  switchStateFromPieceDownToPuyosDown() {
-    this.piece.dismantle();
-    this.state = "puyosDown";
-  }
-
   movePieceLeft() {
-    if (this.isLeftMoveInvalid()) {
+    if (this.isPieceLeftMoveInvalid()) {
       return;
     }
 
@@ -119,7 +118,7 @@ module.exports = class Board {
   }
 
   movePieceRight() {
-    if (this.isRightMoveInvalid()) {
+    if (this.isPieceRightMoveInvalid()) {
       return;
     }
 
@@ -171,12 +170,8 @@ module.exports = class Board {
     }
   }
 
-  letPuyosExplode() {
-    this.state = "puyosDown";
-  }
-
   rotatePiece() {
-    if (this.isRotationInvalid()) {
+    if (this.isPieceRotationInvalid()) {
       return;
     }
 
@@ -208,11 +203,16 @@ module.exports = class Board {
     }
   }
 
+  switchStateFromPieceDownToPuyosDown() {
+    this.piece.dismantle();
+    this.state = "puyosDown";
+  }
+
   toJSON() {
     return this.grid;
   }
 
-  isMoveInvalid() {
+  isPiecePositionInvalid() {
     const puyoOutsideBoundaries = this.piece.puyos().find(puyo => {
       return puyo.posX < 0 || puyo.posY < 0 || puyo.posX > 5 || puyo.posY > 11;
     });
@@ -234,12 +234,8 @@ module.exports = class Board {
       return true;
     }
 
-    const otherPuyo = this.grid[puyo.posY][puyo.posX];
-    if (otherPuyo !== null && !otherPuyo.partOfPiece) {
-      return true;
-    }
-
-    return false;
+    const isPuyoColliding = this.grid[puyo.posY][puyo.posX];
+    return isPuyoColliding;
   }
 
   buildGrid(height, width) {
