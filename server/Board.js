@@ -3,10 +3,10 @@ const Piece = require("./Piece");
 module.exports = class Board {
   constructor() {
     this.grid = this.buildGrid(12, 6);
-
-    this.piece = new Piece(3, 0);
-    this.insertPieceIntoGrid();
-
+    // TODO: Perhaps constructor should invoke some kind of central
+    // state switching function immediately instead of spawning piece
+    // etc?
+    this.spawnPiece();
     this.steppedAt = Date.now();
     this.state = "pieceDown";
   }
@@ -78,12 +78,7 @@ module.exports = class Board {
     // TODO: Should we do this check _once_ in a central place
     // responsible for state switching instead?.
     if (this.piece.isDismantled) {
-      // TODO: Create a function for piece spawning and re-use it here
-      // and in constructor? Perhaps constructor should invoke central
-      // state switching function immediately instead of spawning piece
-      // etc?
-      this.piece = new Piece(3, 0);
-      this.insertPieceIntoGrid();
+      this.spawnPiece();
       return;
     }
 
@@ -161,6 +156,11 @@ module.exports = class Board {
     if (!this.isPieceRotationInvalid()) {
       this.piece.rotateClockwise();
     }
+    this.insertPieceIntoGrid();
+  }
+
+  spawnPiece() {
+    this.piece = new Piece(3, 0);
     this.insertPieceIntoGrid();
   }
 
