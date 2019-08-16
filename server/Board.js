@@ -5,9 +5,7 @@ module.exports = class Board {
     this.grid = this.buildGrid(12, 6);
 
     this.piece = new Piece(3, 0);
-    this.piece.puyos().forEach(puyo => {
-      this.grid[puyo.posY][puyo.posX] = puyo;
-    });
+    this.insertPieceIntoGrid();
 
     this.steppedAt = Date.now();
     this.state = "pieceDown";
@@ -19,6 +17,12 @@ module.exports = class Board {
     }
 
     this.switchStateFromPieceDownToPuyosDown();
+  }
+
+  insertPieceIntoGrid() {
+    this.piece.puyos().forEach(puyo => {
+      this.grid[puyo.posY][puyo.posX] = puyo;
+    });
   }
 
   isPieceDownMoveInvalid() {
@@ -79,58 +83,34 @@ module.exports = class Board {
       // state switching function immediately instead of spawning piece
       // etc?
       this.piece = new Piece(3, 0);
-      this.piece.puyos().forEach(puyo => {
-        this.grid[puyo.posY][puyo.posX] = puyo;
-      });
+      this.insertPieceIntoGrid();
       return;
     }
 
-    if (this.isPieceDownMoveInvalid()) {
+    this.removePieceFromGrid();
+    if (!this.isPieceDownMoveInvalid()) {
+      this.piece.moveDown();
+      this.insertPieceIntoGrid();
+    } else {
+      this.insertPieceIntoGrid();
       this.switchStateFromPieceDownToPuyosDown();
-      return;
     }
-
-    this.piece.puyos().forEach(puyo => {
-      this.grid[puyo.posY][puyo.posX] = null;
-    });
-
-    this.piece.moveDown();
-
-    this.piece.puyos().forEach(puyo => {
-      this.grid[puyo.posY][puyo.posX] = puyo;
-    });
   }
 
   movePieceLeft() {
-    if (this.isPieceLeftMoveInvalid()) {
-      return;
+    this.removePieceFromGrid();
+    if (!this.isPieceLeftMoveInvalid()) {
+      this.piece.moveLeft();
     }
-
-    this.piece.puyos().forEach(puyo => {
-      this.grid[puyo.posY][puyo.posX] = null;
-    });
-
-    this.piece.moveLeft();
-
-    this.piece.puyos().forEach(puyo => {
-      this.grid[puyo.posY][puyo.posX] = puyo;
-    });
+    this.insertPieceIntoGrid();
   }
 
   movePieceRight() {
-    if (this.isPieceRightMoveInvalid()) {
-      return;
+    this.removePieceFromGrid();
+    if (!this.isPieceRightMoveInvalid()) {
+      this.piece.moveRight();
     }
-
-    this.piece.puyos().forEach(puyo => {
-      this.grid[puyo.posY][puyo.posX] = null;
-    });
-
-    this.piece.moveRight();
-
-    this.piece.puyos().forEach(puyo => {
-      this.grid[puyo.posY][puyo.posX] = puyo;
-    });
+    this.insertPieceIntoGrid();
   }
 
   movePuyosDown() {
@@ -146,7 +126,7 @@ module.exports = class Board {
         row.forEach(puyo => {
           // TODO: Consider implementing a NullPuyo so we don't have to
           // check for null in places like this.
-          if (puyo !== null && !puyo.partOfPiece) {
+          if (puyo) {
             if (this.isPuyoDownMoveInvalid(puyo)) {
               return;
             }
@@ -170,20 +150,18 @@ module.exports = class Board {
     }
   }
 
-  rotatePiece() {
-    if (this.isPieceRotationInvalid()) {
-      return;
-    }
-
+  removePieceFromGrid() {
     this.piece.puyos().forEach(puyo => {
       this.grid[puyo.posY][puyo.posX] = null;
     });
+  }
 
-    this.piece.rotateClockwise();
-
-    this.piece.puyos().forEach(puyo => {
-      this.grid[puyo.posY][puyo.posX] = puyo;
-    });
+  rotatePiece() {
+    this.removePieceFromGrid();
+    if (!this.isPieceRotationInvalid()) {
+      this.piece.rotateClockwise();
+    }
+    this.insertPieceIntoGrid();
   }
 
   step() {
@@ -213,29 +191,22 @@ module.exports = class Board {
   }
 
   isPiecePositionInvalid() {
-    const puyoOutsideBoundaries = this.piece.puyos().find(puyo => {
-      return puyo.posX < 0 || puyo.posY < 0 || puyo.posX > 5 || puyo.posY > 11;
+    const isPositionInvalid = this.piece.puyos().find(puyo => {
+      return this.isPuyoPositionInvalid(puyo);
     });
+    return isPositionInvalid;
+  }
 
-    if (puyoOutsideBoundaries) {
-      return true;
-    }
-
-    const puyoColliding = this.piece.puyos().find(puyo => {
-      const cell = this.grid[puyo.posY][puyo.posX];
-      return cell !== null && !cell.partOfPiece;
-    });
-
-    return puyoColliding;
+  isPuyoColliding(puyo) {
+    return this.grid[puyo.posY][puyo.posX];
   }
 
   isPuyoPositionInvalid(puyo) {
-    if (puyo.posX < 0 || puyo.posY < 0 || puyo.posX > 5 || puyo.posY > 11) {
-      return true;
-    }
+    return this.isPuyoOutsideBoundaries(puyo) || this.isPuyoColliding(puyo);
+  }
 
-    const isPuyoColliding = this.grid[puyo.posY][puyo.posX];
-    return isPuyoColliding;
+  isPuyoOutsideBoundaries(puyo) {
+    return puyo.posX < 0 || puyo.posY < 0 || puyo.posX > 5 || puyo.posY > 11;
   }
 
   buildGrid(height, width) {
