@@ -62,6 +62,7 @@ module.exports = class Board {
   }
 
   isPuyoDownMoveInvalid(puyo) {
+    // TODO: Create puyo.moveDown() etc?
     puyo.posY += 1;
 
     const invalidMove = this.isPuyoPositionInvalid(puyo);

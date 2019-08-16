@@ -15,9 +15,8 @@ function updateView(boards) {
     const squareSize = canvas.width / 16;
     const offsetX = (index * canvas.width) / 2 + squareSize;
     const offsetY = squareSize * 2;
-    context.strokeStyle = "#FFFFFF";
+    context.strokeStyle = "#ffffff";
     context.lineWidth = 2;
-    context.fillStyle = "#FE4365";
 
     // Draw borders around the 12 * 6 board.
     context.strokeRect(
@@ -30,7 +29,23 @@ function updateView(boards) {
     // Draw board content.
     board.forEach((row, rowIndex) => {
       row.forEach((cell, columnIndex) => {
-        if (cell === 1) {
+        if (cell) {
+          switch(cell) {
+            case 1:
+              context.fillStyle = "#404040";
+              break;
+            case 2:
+              context.fillStyle = "#c0c0c0";
+              break;
+            case 3:
+              context.fillStyle = "#808080";
+              break;
+            case 4:
+              context.fillStyle = "#ffffff";
+              break;
+            default:
+              context.fillStyle = "#ff0000";
+          }
           context.fillRect(
             offsetX + columnIndex * squareSize,
             offsetY + rowIndex * squareSize,

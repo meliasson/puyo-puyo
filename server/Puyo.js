@@ -1,8 +1,9 @@
 module.exports = class Puyo {
   constructor(posX, posY, partOfPiece = false) {
+    this.color = Math.floor(Math.random(1) * 4) + 1;
+    this.partOfPiece = partOfPiece;
     this.posX = posX;
     this.posY = posY;
-    this.partOfPiece = partOfPiece;
   }
 
   removeFromPiece() {
@@ -10,6 +11,6 @@ module.exports = class Puyo {
   }
 
   toJSON() {
-    return 1;
+    return this.color;
   }
 };
