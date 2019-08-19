@@ -80,7 +80,7 @@ function initKeydownEventListener() {
 
 function initWebSocket() {
   ws = new window.WebSocket(
-    process.env.REACT_APP_WEBSOCKET_URL || `ws://${window.location.host}`
+    process.env.REACT_APP_WEBSOCKET_URL || `wss://${window.location.host}`
   );
 
   ws.onopen = () => {
