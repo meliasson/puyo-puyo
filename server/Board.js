@@ -8,7 +8,7 @@ module.exports = class Board {
     // etc?
     this.spawnPiece();
     this.steppedAt = Date.now();
-    this.state = "pieceDown";
+    this.switchStateToPieceDown();
   }
 
   dropPiece() {
@@ -16,7 +16,75 @@ module.exports = class Board {
       return;
     }
 
-    this.switchStateFromPieceDownToPuyosDown();
+    this.piece.dismantle();
+    this.switchStateToPieceDropped();
+  }
+
+  explodePuyos() {
+    for (let i = 0; i < this.grid.length; i += 1) {
+      for (let j = 0; j < this.grid[0].length; j += 1) {
+        const puyo = this.grid[i][j];
+        if (!puyo || puyo.isVisited) {
+          continue;
+        }
+
+        // Identify puyos to explode.
+        const candidates = new Set([puyo]);
+        candidates.forEach(candidate => {
+          candidate.isVisited = true;
+
+          // Check top neighbor.
+          if (candidate.posY - 1 > 0) {
+            const n = this.grid[candidate.posY - 1][candidate.posX];
+            if (n && n.color === candidate.color) {
+              candidates.add(n);
+            }
+          }
+
+          // Check right neighbor
+          if (candidate.posX + 1 < this.grid[0].length) {
+            const n = this.grid[candidate.posY][candidate.posX + 1];
+            if (n && n.color === candidate.color) {
+              candidates.add(n);
+            }
+          }
+
+          // Check bottom neighbor
+          if (candidate.posY + 1 < this.grid.length) {
+            const n = this.grid[candidate.posY + 1][candidate.posX];
+            if (n && n.color === candidate.color) {
+              candidates.add(n);
+            }
+          }
+
+          // Check left neighbor
+          if (candidate.posX - 1 > 0) {
+            const n = this.grid[candidate.posY][candidate.posX - 1];
+            if (n && n.color === candidate.color) {
+              candidates.add(n);
+            }
+          }
+        });
+
+        // Explode puyos.
+        if (candidates.size > 3) {
+          candidates.forEach(candidate => {
+            this.grid[candidate.posY][candidate.posX] = null;
+          });
+        }
+      }
+    }
+
+    // Reset all puyos.
+    this.grid.forEach(row => {
+      row.forEach(pr => {
+        if (pr) {
+          pr.isVisited = false;
+        }
+      });
+    });
+
+    this.switchStateToPuyosDown();
   }
 
   insertPieceIntoGrid() {
@@ -71,8 +139,39 @@ module.exports = class Board {
     return invalidMove;
   }
 
-  letPuyosExplode() {
-    this.state = "puyosDown";
+  moveDroppedPieceDown() {
+    let isPuyoMovedDown = false;
+    // TODO: Figure out if we can express the need to loop backwards
+    // with code. We do it because otherwise we'll move a puyo to the
+    // next row and when we get to the next row we'll immediately move
+    // it again, resulting in puyos that move too fast.
+    this.grid
+      .slice()
+      .reverse()
+      .forEach(row => {
+        row.forEach(puyo => {
+          // TODO: Consider implementing a NullPuyo so we don't have to
+          // check for null in places like this.
+          if (puyo) {
+            if (this.isPuyoDownMoveInvalid(puyo)) {
+              return;
+            }
+
+            this.grid[puyo.posY][puyo.posX] = null;
+
+            // TODO: Make this a function?
+            puyo.posY += 1;
+
+            this.grid[puyo.posY][puyo.posX] = puyo;
+
+            isPuyoMovedDown = true;
+          }
+        });
+      });
+
+    if (!isPuyoMovedDown) {
+      this.switchStateToExplodePuyos();
+    }
   }
 
   movePieceDown() {
@@ -89,7 +188,8 @@ module.exports = class Board {
       this.insertPieceIntoGrid();
     } else {
       this.insertPieceIntoGrid();
-      this.switchStateFromPieceDownToPuyosDown();
+      this.piece.dismantle();
+      this.switchStateToPuyosDown();
     }
   }
 
@@ -172,18 +272,31 @@ module.exports = class Board {
     if (this.state === "pieceDown" && timeSinceLastStep > 1000) {
       this.movePieceDown();
       this.steppedAt = now;
+    } else if (this.state === "pieceDropped") {
+      this.moveDroppedPieceDown();
+      this.steppedAt = now;
     } else if (this.state === "puyosDown") {
       this.movePuyosDown();
       this.steppedAt = now;
-    } else if (this.state === "puyosExplode") {
-      this.letPuyosExplode();
+    } else if (this.state === "puyosExplode" && timeSinceLastStep > 100) {
+      this.explodePuyos();
       this.steppedAt = now;
-      // TODO: Go back to state dropPuyos.
     }
   }
 
-  switchStateFromPieceDownToPuyosDown() {
-    this.piece.dismantle();
+  switchStateToExplodePuyos() {
+    this.state = "puyosExplode";
+  }
+
+  switchStateToPieceDown() {
+    this.state = "pieceDown";
+  }
+
+  switchStateToPieceDropped() {
+    this.state = "pieceDropped";
+  }
+
+  switchStateToPuyosDown() {
     this.state = "puyosDown";
   }
 
