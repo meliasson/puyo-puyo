@@ -1,3 +1,4 @@
+const NullPiece = require("./NullPiece");
 const Piece = require("./Piece");
 
 module.exports = class Board {
@@ -12,11 +13,12 @@ module.exports = class Board {
   }
 
   dropPiece() {
-    if (this.piece.isDismantled) {
+    // TODO: Can we do this check a bit sweeter?
+    if (this.state !== "pieceDown") {
       return;
     }
 
-    this.piece.dismantle();
+    this.piece = new NullPiece();
     this.switchStateToPieceDropped();
   }
 
@@ -170,25 +172,19 @@ module.exports = class Board {
       });
 
     if (!isPuyoMovedDown) {
+      // TODO: Switch to null piece.
       this.switchStateToExplodePuyos();
     }
   }
 
   movePieceDown() {
-    // TODO: Should we do this check _once_ in a central place
-    // responsible for state switching instead?.
-    if (this.piece.isDismantled) {
-      this.spawnPiece();
-      return;
-    }
-
     this.removePieceFromGrid();
     if (!this.isPieceDownMoveInvalid()) {
       this.piece.moveDown();
       this.insertPieceIntoGrid();
     } else {
       this.insertPieceIntoGrid();
-      this.piece.dismantle();
+      this.piece = new NullPiece();
       this.switchStateToPuyosDown();
     }
   }
@@ -240,9 +236,10 @@ module.exports = class Board {
       });
 
     if (isPuyoMovedDown) {
-      this.state = "puyosExplode";
+      this.switchStateToExplodePuyos();
     } else {
-      this.state = "pieceDown";
+      this.spawnPiece();
+      this.switchStateToPieceDown();
     }
   }
 

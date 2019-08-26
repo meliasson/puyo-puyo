@@ -2,68 +2,35 @@ const Puyo = require("./Puyo");
 
 module.exports = class Piece {
   constructor(posX, posY) {
-    this.isDismantled = false;
-    this.pivotingPuyo = new Puyo(posX, posY + 1, true);
-    this.rotatingPuyo = new Puyo(posX, posY, true);
-  }
-
-  dismantle() {
-    this.isDismantled = true;
-    this.pivotingPuyo.removeFromPiece();
-    this.rotatingPuyo.removeFromPiece();
+    this.pivotingPuyo = new Puyo(posX, posY + 1);
+    this.rotatingPuyo = new Puyo(posX, posY);
   }
 
   moveDown() {
-    // TODO: Consider implementing a NullPiece so we don't need guard
-    // clauses like this one.
-    if (this.isDismantled) {
-      return;
-    }
-
     this.pivotingPuyo.posY += 1;
     this.rotatingPuyo.posY += 1;
   }
 
   moveLeft() {
-    if (this.isDismantled) {
-      return;
-    }
-
     this.pivotingPuyo.posX -= 1;
     this.rotatingPuyo.posX -= 1;
   }
 
   moveRight() {
-    if (this.isDismantled) {
-      return;
-    }
-
     this.pivotingPuyo.posX += 1;
     this.rotatingPuyo.posX += 1;
   }
 
   moveUp() {
-    if (this.isDismantled) {
-      return;
-    }
-
     this.pivotingPuyo.posY -= 1;
     this.rotatingPuyo.posY -= 1;
   }
 
   puyos() {
-    if (this.isDismantled) {
-      return [];
-    }
-
     return [this.pivotingPuyo, this.rotatingPuyo];
   }
 
   rotateClockwise() {
-    if (this.isDismantled) {
-      return;
-    }
-
     if (this.rotatingPuyo.posY === this.pivotingPuyo.posY) {
       this.rotateClockwiseWhenHorizontal();
     } else {
@@ -72,10 +39,6 @@ module.exports = class Piece {
   }
 
   rotateCounterClockwise() {
-    if (this.isDismantled) {
-      return;
-    }
-
     if (this.rotatingPuyo.posY === this.pivotingPuyo.posY) {
       this.rotateCounterClockwiseWhenHorizontal();
     } else {
