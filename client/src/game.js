@@ -27,30 +27,18 @@ function updateView(boards) {
     );
 
     // Draw board content.
+    // const colors = ["#404040", "#c0c0c0", "#808080", "#ffffff"];
+    // const colors = ["#ECE59A", "#FD6E8A", "#848D82", "#2C3B63"];
+    const colors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"];
     board.forEach((row, rowIndex) => {
       row.forEach((cell, columnIndex) => {
         if (cell) {
-          switch(cell) {
-            case 1:
-              context.fillStyle = "#404040";
-              break;
-            case 2:
-              context.fillStyle = "#c0c0c0";
-              break;
-            case 3:
-              context.fillStyle = "#808080";
-              break;
-            case 4:
-              context.fillStyle = "#ffffff";
-              break;
-            default:
-              context.fillStyle = "#ff0000";
-          }
+          context.fillStyle = colors[cell - 1];
           context.fillRect(
             offsetX + columnIndex * squareSize,
             offsetY + rowIndex * squareSize,
-            squareSize,
-            squareSize
+            squareSize - 1,
+            squareSize - 1
           );
         }
       });
