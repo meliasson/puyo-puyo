@@ -172,7 +172,6 @@ module.exports = class Board {
       });
 
     if (!isPuyoMovedDown) {
-      // TODO: Switch to null piece.
       this.switchStateToExplodePuyos();
     }
   }
@@ -258,6 +257,11 @@ module.exports = class Board {
   }
 
   spawnPiece() {
+    if (this.grid[0][3] || this.grid[1][3]) {
+      this.switchStateToGameOver();
+      return;
+    }
+
     this.piece = new Piece(3, 0);
     this.insertPieceIntoGrid();
   }
@@ -278,11 +282,17 @@ module.exports = class Board {
     } else if (this.state === "puyosExplode" && timeSinceLastStep > 100) {
       this.explodePuyos();
       this.steppedAt = now;
+    } else if (this.state === "gameOver") {
+      // NOOP at the moment.
     }
   }
 
   switchStateToExplodePuyos() {
     this.state = "puyosExplode";
+  }
+
+  switchStateToGameOver() {
+    this.state = "gameOver";
   }
 
   switchStateToPieceDown() {
@@ -298,6 +308,8 @@ module.exports = class Board {
   }
 
   toJSON() {
+    // TODO: Return full object instead? (So we can determine amount
+    // of debris and realize when we're in a game over state.)
     return this.grid;
   }
 
