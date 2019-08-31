@@ -19,14 +19,16 @@ module.exports = class Board {
     }
 
     this.piece = new NullPiece();
-    this.switchStateToPieceDropped();
+    this.switchStateToPuyosDown();
   }
 
   explodePuyos() {
+    let isPuyoExploded = false;
     this.grid.forEach(row => {
       row.forEach(puyo => {
         const connectedPuyos = this.findConnectedPuyos(puyo);
         if (connectedPuyos.size > 3) {
+          isPuyoExploded = true;
           connectedPuyos.forEach(connectedPuyo => {
             this.grid[connectedPuyo.posY][connectedPuyo.posX] = null;
           });
@@ -34,27 +36,22 @@ module.exports = class Board {
       });
     });
 
-    // Reset all puyos.
-    this.grid.forEach(row => {
-      row.forEach(puyo => {
-        if (puyo) {
-          puyo.isVisited = false;
-        }
-      });
-    });
-
-    this.switchStateToPuyosDown();
+    if (isPuyoExploded) {
+      this.switchStateToPuyosDown();
+    } else {
+      this.spawnPiece();
+      this.switchStateToPieceDown();
+    }
   }
 
   findConnectedPuyos(puyo) {
     const result = new Set();
-    if (!puyo || puyo.isVisited) {
+    if (!puyo) {
       return new Set();
     }
 
     result.add(puyo);
     result.forEach(connectedPuyo => {
-      connectedPuyo.isVisited = true;
       const puyoAbove = this.getConnectedPuyoAbove(connectedPuyo);
       if (puyoAbove) {
         result.add(puyoAbove);
@@ -63,9 +60,9 @@ module.exports = class Board {
       if (puyoBelow) {
         result.add(puyoBelow);
       }
-      const puyoToLeft = this.getConnectedPuyoBelow(connectedPuyo);
+      const puyoToLeft = this.getConnectedPuyoToLeft(connectedPuyo);
       if (puyoToLeft) {
-        result.add(puyoBelow);
+        result.add(puyoToLeft);
       }
       const puyoToRight = this.getConnectedPuyoToRight(connectedPuyo);
       if (puyoToRight) {
@@ -77,7 +74,7 @@ module.exports = class Board {
   }
 
   getConnectedPuyoAbove(puyo) {
-    if (puyo.posY - 1 > 0) {
+    if (puyo.posY - 1 >= 0) {
       const puyoAbove = this.grid[puyo.posY - 1][puyo.posX];
       if (puyoAbove && puyoAbove.color === puyo.color) {
         return puyoAbove;
@@ -95,7 +92,7 @@ module.exports = class Board {
   }
 
   getConnectedPuyoToLeft(puyo) {
-    if (puyo.posX - 1 < 0) {
+    if (puyo.posX - 1 >= 0) {
       const puyoToLeft = this.grid[puyo.posY][puyo.posX - 1];
       if (puyoToLeft && puyoToLeft.color === puyo.color) {
         return puyoToLeft;
@@ -164,41 +161,6 @@ module.exports = class Board {
     return invalidMove;
   }
 
-  moveDroppedPieceDown() {
-    let isPuyoMovedDown = false;
-    // TODO: Figure out if we can express the need to loop backwards
-    // with code. We do it because otherwise we'll move a puyo to the
-    // next row and when we get to the next row we'll immediately move
-    // it again, resulting in puyos that move too fast.
-    this.grid
-      .slice()
-      .reverse()
-      .forEach(row => {
-        row.forEach(puyo => {
-          // TODO: Consider implementing a NullPuyo so we don't have to
-          // check for null in places like this.
-          if (puyo) {
-            if (this.isPuyoDownMoveInvalid(puyo)) {
-              return;
-            }
-
-            this.grid[puyo.posY][puyo.posX] = null;
-
-            // TODO: Make this a function?
-            puyo.posY += 1;
-
-            this.grid[puyo.posY][puyo.posX] = puyo;
-
-            isPuyoMovedDown = true;
-          }
-        });
-      });
-
-    if (!isPuyoMovedDown) {
-      this.switchStateToExplodePuyos();
-    }
-  }
-
   movePieceDown() {
     this.removePieceFromGrid();
     if (!this.isPieceDownMoveInvalid()) {
@@ -257,11 +219,8 @@ module.exports = class Board {
         });
       });
 
-    if (isPuyoMovedDown) {
+    if (!isPuyoMovedDown) {
       this.switchStateToExplodePuyos();
-    } else {
-      this.spawnPiece();
-      this.switchStateToPieceDown();
     }
   }
 
@@ -296,9 +255,6 @@ module.exports = class Board {
     if (this.state === "pieceDown" && timeSinceLastStep > 1000) {
       this.movePieceDown();
       this.steppedAt = now;
-    } else if (this.state === "pieceDropped") {
-      this.moveDroppedPieceDown();
-      this.steppedAt = now;
     } else if (this.state === "puyosDown") {
       this.movePuyosDown();
       this.steppedAt = now;
@@ -320,10 +276,6 @@ module.exports = class Board {
 
   switchStateToPieceDown() {
     this.state = "pieceDown";
-  }
-
-  switchStateToPieceDropped() {
-    this.state = "pieceDropped";
   }
 
   switchStateToPuyosDown() {
