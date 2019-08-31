@@ -1,6 +1,4 @@
 module.exports = class NullPiece {
-  // constructor() {}
-
   moveDown() {}
 
   moveLeft() {}
