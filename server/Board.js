@@ -23,70 +23,93 @@ module.exports = class Board {
   }
 
   explodePuyos() {
-    for (let i = 0; i < this.grid.length; i += 1) {
-      for (let j = 0; j < this.grid[0].length; j += 1) {
-        const puyo = this.grid[i][j];
-        if (!puyo || puyo.isVisited) {
-          continue;
-        }
-
-        // Identify puyos to explode.
-        const candidates = new Set([puyo]);
-        candidates.forEach(candidate => {
-          candidate.isVisited = true;
-
-          // Check top neighbor.
-          if (candidate.posY - 1 > 0) {
-            const n = this.grid[candidate.posY - 1][candidate.posX];
-            if (n && n.color === candidate.color) {
-              candidates.add(n);
-            }
-          }
-
-          // Check right neighbor
-          if (candidate.posX + 1 < this.grid[0].length) {
-            const n = this.grid[candidate.posY][candidate.posX + 1];
-            if (n && n.color === candidate.color) {
-              candidates.add(n);
-            }
-          }
-
-          // Check bottom neighbor
-          if (candidate.posY + 1 < this.grid.length) {
-            const n = this.grid[candidate.posY + 1][candidate.posX];
-            if (n && n.color === candidate.color) {
-              candidates.add(n);
-            }
-          }
-
-          // Check left neighbor
-          if (candidate.posX - 1 > 0) {
-            const n = this.grid[candidate.posY][candidate.posX - 1];
-            if (n && n.color === candidate.color) {
-              candidates.add(n);
-            }
-          }
-        });
-
-        // Explode puyos.
-        if (candidates.size > 3) {
-          candidates.forEach(candidate => {
-            this.grid[candidate.posY][candidate.posX] = null;
+    this.grid.forEach(row => {
+      row.forEach(puyo => {
+        const connectedPuyos = this.findConnectedPuyos(puyo);
+        if (connectedPuyos.size > 3) {
+          connectedPuyos.forEach(connectedPuyo => {
+            this.grid[connectedPuyo.posY][connectedPuyo.posX] = null;
           });
         }
-      }
-    }
+      });
+    });
 
     // Reset all puyos.
     this.grid.forEach(row => {
-      row.forEach(pr => {
-        if (pr) {
-          pr.isVisited = false;
+      row.forEach(puyo => {
+        if (puyo) {
+          puyo.isVisited = false;
         }
       });
     });
 
     this.switchStateToPuyosDown();
+  }
+
+  findConnectedPuyos(puyo) {
+    const result = new Set();
+    if (!puyo || puyo.isVisited) {
+      return new Set();
+    }
+
+    result.add(puyo);
+    result.forEach(connectedPuyo => {
+      connectedPuyo.isVisited = true;
+      const puyoAbove = this.getConnectedPuyoAbove(connectedPuyo);
+      if (puyoAbove) {
+        result.add(puyoAbove);
+      }
+      const puyoBelow = this.getConnectedPuyoBelow(connectedPuyo);
+      if (puyoBelow) {
+        result.add(puyoBelow);
+      }
+      const puyoToLeft = this.getConnectedPuyoBelow(connectedPuyo);
+      if (puyoToLeft) {
+        result.add(puyoBelow);
+      }
+      const puyoToRight = this.getConnectedPuyoToRight(connectedPuyo);
+      if (puyoToRight) {
+        result.add(puyoToRight);
+      }
+    });
+
+    return result;
+  }
+
+  getConnectedPuyoAbove(puyo) {
+    if (puyo.posY - 1 > 0) {
+      const puyoAbove = this.grid[puyo.posY - 1][puyo.posX];
+      if (puyoAbove && puyoAbove.color === puyo.color) {
+        return puyoAbove;
+      }
+    }
+  }
+
+  getConnectedPuyoBelow(puyo) {
+    if (puyo.posY + 1 < this.grid.length) {
+      const puyoBelow = this.grid[puyo.posY + 1][puyo.posX];
+      if (puyoBelow && puyoBelow.color === puyo.color) {
+        return puyoBelow;
+      }
+    }
+  }
+
+  getConnectedPuyoToLeft(puyo) {
+    if (puyo.posX - 1 < 0) {
+      const puyoToLeft = this.grid[puyo.posY][puyo.posX - 1];
+      if (puyoToLeft && puyoToLeft.color === puyo.color) {
+        return puyoToLeft;
+      }
+    }
+  }
+
+  getConnectedPuyoToRight(puyo) {
+    if (puyo.posX + 1 < this.grid[0].length) {
+      const puyoToRight = this.grid[puyo.posY][puyo.posX + 1];
+      if (puyoToRight && puyoToRight.color === puyo.color) {
+        return puyoToRight;
+      }
+    }
   }
 
   insertPieceIntoGrid() {
