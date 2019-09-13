@@ -50,9 +50,32 @@ module.exports = class Game {
   }
 
   step() {
-    this.boards.forEach(board => {
-      board.step();
-    });
+    if (!this.isFull()) {
+      const message = JSON.stringify({
+        status: "waiting-for-opponent",
+        game: this.toJSON()
+      });
+      Array.from(this.boards.keys()).forEach(player => {
+        player.send(message);
+      });
+      return;
+    }
+
+    for (const [client, board] of this.boards) {
+      const explodedPuyos = board.step();
+      if (explodedPuyos.length > 0) {
+        for (const [tmpClient, tmpBoard] of this.boards) {
+          if (tmpClient !== client) {
+            // tmpBoard.debris =
+            //   explodedPuyos.reduce((acc, val) => {
+            //     return acc + val;
+            //   }) * explodedPuyos.length;
+            tmpBoard.debris =
+              explodedPuyos.length === 1 ? 1 : 2 ** explodedPuyos.length;
+          }
+        }
+      }
+    }
 
     const message = JSON.stringify({ status: "loop", game: this.toJSON() });
 

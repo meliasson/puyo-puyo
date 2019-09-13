@@ -8,7 +8,20 @@ class App extends React.Component {
   }
 
   render() {
-    return null;
+    return (
+      <div>
+        <div id="start-view">
+          <div id="header">
+            <h1>The Amazing Meeting</h1>
+          </div>
+          <div id="footer">Press any key</div>
+        </div>
+        <div id="waiting-view" className="hidden">
+          Waiting for opponent ...
+        </div>
+        <canvas id="running-view" className="hidden"></canvas>
+      </div>
+    );
   }
 }
 

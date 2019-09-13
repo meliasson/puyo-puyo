@@ -1,8 +1,12 @@
 const NullPiece = require("./NullPiece");
 const Piece = require("./Piece");
+const Puyo = require("./Puyo");
 
 module.exports = class Board {
   constructor() {
+    this.debris = 0;
+    this.explodedPuyos = [];
+    this.sumOfExplodedPuyos = [];
     this.grid = this.buildGrid(12, 6);
     // TODO: Perhaps constructor should invoke some kind of central
     // state switching function immediately instead of spawning piece
@@ -27,8 +31,13 @@ module.exports = class Board {
     this.grid.forEach(row => {
       row.forEach(puyo => {
         const connectedPuyos = this.findConnectedPuyos(puyo);
-        if (connectedPuyos.size > 3) {
+        const tmp = [...connectedPuyos];
+        const connectedPuyosExcludingDebris = tmp.filter(
+          puyo => puyo.color !== 5
+        );
+        if (connectedPuyosExcludingDebris.length > 3) {
           isPuyoExploded = true;
+          this.explodedPuyos.push(connectedPuyosExcludingDebris.length);
           connectedPuyos.forEach(connectedPuyo => {
             this.grid[connectedPuyo.posY][connectedPuyo.posX] = null;
           });
@@ -39,6 +48,8 @@ module.exports = class Board {
     if (isPuyoExploded) {
       this.switchStateToPuyosDown();
     } else {
+      this.sumOfExplodedPuyos = this.explodedPuyos;
+      this.explodedPuyos = [];
       this.spawnPiece();
       this.switchStateToPieceDown();
     }
@@ -52,21 +63,23 @@ module.exports = class Board {
 
     result.add(puyo);
     result.forEach(connectedPuyo => {
-      const puyoAbove = this.getConnectedPuyoAbove(connectedPuyo);
-      if (puyoAbove) {
-        result.add(puyoAbove);
-      }
-      const puyoBelow = this.getConnectedPuyoBelow(connectedPuyo);
-      if (puyoBelow) {
-        result.add(puyoBelow);
-      }
-      const puyoToLeft = this.getConnectedPuyoToLeft(connectedPuyo);
-      if (puyoToLeft) {
-        result.add(puyoToLeft);
-      }
-      const puyoToRight = this.getConnectedPuyoToRight(connectedPuyo);
-      if (puyoToRight) {
-        result.add(puyoToRight);
+      if (connectedPuyo.color !== 5) {
+        const puyoAbove = this.getConnectedPuyoAbove(connectedPuyo);
+        if (puyoAbove) {
+          result.add(puyoAbove);
+        }
+        const puyoBelow = this.getConnectedPuyoBelow(connectedPuyo);
+        if (puyoBelow) {
+          result.add(puyoBelow);
+        }
+        const puyoToLeft = this.getConnectedPuyoToLeft(connectedPuyo);
+        if (puyoToLeft) {
+          result.add(puyoToLeft);
+        }
+        const puyoToRight = this.getConnectedPuyoToRight(connectedPuyo);
+        if (puyoToRight) {
+          result.add(puyoToRight);
+        }
       }
     });
 
@@ -76,7 +89,10 @@ module.exports = class Board {
   getConnectedPuyoAbove(puyo) {
     if (puyo.posY - 1 >= 0) {
       const puyoAbove = this.grid[puyo.posY - 1][puyo.posX];
-      if (puyoAbove && puyoAbove.color === puyo.color) {
+      if (
+        puyoAbove &&
+        (puyoAbove.color === puyo.color || puyoAbove.color === 5)
+      ) {
         return puyoAbove;
       }
     }
@@ -85,7 +101,10 @@ module.exports = class Board {
   getConnectedPuyoBelow(puyo) {
     if (puyo.posY + 1 < this.grid.length) {
       const puyoBelow = this.grid[puyo.posY + 1][puyo.posX];
-      if (puyoBelow && puyoBelow.color === puyo.color) {
+      if (
+        puyoBelow &&
+        (puyoBelow.color === puyo.color || puyoBelow.color === 5)
+      ) {
         return puyoBelow;
       }
     }
@@ -94,7 +113,10 @@ module.exports = class Board {
   getConnectedPuyoToLeft(puyo) {
     if (puyo.posX - 1 >= 0) {
       const puyoToLeft = this.grid[puyo.posY][puyo.posX - 1];
-      if (puyoToLeft && puyoToLeft.color === puyo.color) {
+      if (
+        puyoToLeft &&
+        (puyoToLeft.color === puyo.color || puyoToLeft.color === 5)
+      ) {
         return puyoToLeft;
       }
     }
@@ -103,7 +125,10 @@ module.exports = class Board {
   getConnectedPuyoToRight(puyo) {
     if (puyo.posX + 1 < this.grid[0].length) {
       const puyoToRight = this.grid[puyo.posY][puyo.posX + 1];
-      if (puyoToRight && puyoToRight.color === puyo.color) {
+      if (
+        puyoToRight &&
+        (puyoToRight.color === puyo.color || puyoToRight.color === 5)
+      ) {
         return puyoToRight;
       }
     }
@@ -169,7 +194,11 @@ module.exports = class Board {
     } else {
       this.insertPieceIntoGrid();
       this.piece = new NullPiece();
-      this.switchStateToPuyosDown();
+      if (this.debris > 0) {
+        this.switchStateToDebrisDown();
+      } else {
+        this.switchStateToPuyosDown();
+      }
     }
   }
 
@@ -261,9 +290,32 @@ module.exports = class Board {
     } else if (this.state === "puyosExplode" && timeSinceLastStep > 100) {
       this.explodePuyos();
       this.steppedAt = now;
+    } else if (this.state === "debrisDown") {
+      let counter = 0;
+      for (let i = 0; i < this.grid.length; i += 1) {
+        for (let j = 0; j < this.grid[i].length; j += 1) {
+          if (counter >= this.debris) {
+            break;
+          }
+          if (!this.grid[i][j]) {
+            counter += 1;
+            this.grid[i][j] = new Puyo(j, i, 5);
+          }
+        }
+      }
+      this.debris = 0;
+      this.switchStateToPuyosDown();
     } else if (this.state === "gameOver") {
       // NOOP at the moment.
     }
+
+    const sumOfExplodedPuyos = this.sumOfExplodedPuyos;
+    this.sumOfExplodedPuyos = [];
+    return sumOfExplodedPuyos;
+  }
+
+  switchStateToDebrisDown() {
+    this.state = "debrisDown";
   }
 
   switchStateToExplodePuyos() {

@@ -1,6 +1,7 @@
-let ws;
 let canvas;
 let context;
+let state;
+let ws;
 
 function updateView(boards) {
   const size = Math.min(window.innerWidth, window.innerHeight);
@@ -8,7 +9,7 @@ function updateView(boards) {
   canvas.height = size - (size % 16);
 
   context.clearRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = "#000000";
+  context.fillStyle = "#222222";
   context.fillRect(0, 0, canvas.width, canvas.height);
 
   boards.forEach((board, index) => {
@@ -22,14 +23,15 @@ function updateView(boards) {
     context.strokeRect(
       offsetX - 2,
       offsetY - 2,
-      squareSize * 6 + 4,
-      squareSize * 12 + 4
+      squareSize * 6 + 3,
+      squareSize * 12 + 3
     );
 
     // Draw board content.
-    // const colors = ["#404040", "#c0c0c0", "#808080", "#ffffff"];
-    // const colors = ["#ECE59A", "#FD6E8A", "#848D82", "#2C3B63"];
-    const colors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"];
+    // const colors = ["#404040", "#c0c0c0", "#808080", "#ffffff"]; // gray
+    // const colors = ["#ECE59A", "#FD6E8A", "#848D82", "#2C3B63"]; // modern mellow
+    // const colors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"]; // base colors
+    const colors = ["#ff48c4", "#2bd1fc", "#f3ea5f", "#c04df9", "#ff3f3f"]; // 80s
     board.forEach((row, rowIndex) => {
       row.forEach((cell, columnIndex) => {
         if (cell) {
@@ -46,14 +48,32 @@ function updateView(boards) {
   });
 }
 
-function initView() {
-  canvas = document.createElement("canvas");
-  document.getElementById("root").appendChild(canvas);
+function replaceStartViewWithRunningView() {
+  document.getElementById("start-view").classList.toggle("hidden");
+  canvas = document.getElementById("running-view");
+  canvas.classList.toggle("hidden");
   context = canvas.getContext("2d");
+}
+
+function replaceWaitingViewWithRunningView() {
+  document.getElementById("waiting-view").classList.toggle("hidden");
+  canvas = document.getElementById("running-view");
+  canvas.classList.toggle("hidden");
+  context = canvas.getContext("2d");
+}
+
+function replaceStartViewWithWaitingView() {
+  document.getElementById("start-view").classList.toggle("hidden");
+  document.getElementById("waiting-view").classList.toggle("hidden");
 }
 
 function initKeydownEventListener() {
   document.addEventListener("keydown", event => {
+    if (state === "start") {
+      connectToServer();
+      return;
+    }
+
     if (event.keyCode === 87) {
       ws.send(JSON.stringify({ action: "rotate" }));
     } else if (event.keyCode === 83) {
@@ -66,7 +86,7 @@ function initKeydownEventListener() {
   });
 }
 
-function initWebSocket() {
+function connectToServer() {
   ws = new window.WebSocket(
     process.env.REACT_APP_WEBSOCKET_URL || `wss://${window.location.host}`
   );
@@ -78,7 +98,18 @@ function initWebSocket() {
   ws.onmessage = event => {
     const message = JSON.parse(event.data);
     console.log("Received message from server", message);
-    if (message.status === "loop") {
+    if (state === "start" && message.status === "waiting-for-opponent") {
+      state = "waiting";
+      replaceStartViewWithWaitingView();
+    } else if (state === "start" && message.status === "loop") {
+      state = "running";
+      replaceStartViewWithRunningView();
+      updateView(message.game.boards);
+    } else if (state === "waiting" && message.status === "loop") {
+      state = "running";
+      replaceWaitingViewWithRunningView();
+      updateView(message.game.boards);
+    } else if (message.status === "loop") {
       updateView(message.game.boards);
     }
   };
@@ -89,7 +120,6 @@ function initWebSocket() {
 }
 
 export function initGame() {
-  initWebSocket();
+  state = "start";
   initKeydownEventListener();
-  initView();
 }
