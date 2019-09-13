@@ -5,8 +5,8 @@ const Puyo = require("./Puyo");
 module.exports = class Board {
   constructor() {
     this.debris = 0;
-    this.explodedPuyos = [];
-    this.sumOfExplodedPuyos = [];
+    this.explodedPuyosInProgress = [];
+    this.explodedPuyosResult = [];
     this.grid = this.buildGrid(12, 6);
     // TODO: Perhaps constructor should invoke some kind of central
     // state switching function immediately instead of spawning piece
@@ -37,7 +37,9 @@ module.exports = class Board {
         );
         if (connectedPuyosExcludingDebris.length > 3) {
           isPuyoExploded = true;
-          this.explodedPuyos.push(connectedPuyosExcludingDebris.length);
+          this.explodedPuyosInProgress.push(
+            connectedPuyosExcludingDebris.length
+          );
           connectedPuyos.forEach(connectedPuyo => {
             this.grid[connectedPuyo.posY][connectedPuyo.posX] = null;
           });
@@ -48,10 +50,12 @@ module.exports = class Board {
     if (isPuyoExploded) {
       this.switchStateToPuyosDown();
     } else {
-      this.sumOfExplodedPuyos = this.explodedPuyos;
-      this.explodedPuyos = [];
-      this.spawnPiece();
-      this.switchStateToPieceDown();
+      this.explodedPuyosResult = this.explodedPuyosInProgress;
+      this.explodedPuyosInProgress = [];
+      const isSpawnSuccessful = this.spawnPiece();
+      if (isSpawnSuccessful) {
+        this.switchStateToPieceDown();
+      }
     }
   }
 
@@ -272,11 +276,12 @@ module.exports = class Board {
   spawnPiece() {
     if (this.grid[0][3] || this.grid[1][3]) {
       this.switchStateToGameOver();
-      return;
+      return false;
     }
 
     this.piece = new Piece(3, 0);
     this.insertPieceIntoGrid();
+    return true;
   }
 
   step() {
@@ -314,9 +319,9 @@ module.exports = class Board {
       // NOOP at the moment.
     }
 
-    const sumOfExplodedPuyos = this.sumOfExplodedPuyos;
-    this.sumOfExplodedPuyos = [];
-    return sumOfExplodedPuyos;
+    const explodedPuyos = this.explodedPuyosResult;
+    this.explodedPuyosResult = [];
+    return { explodedPuyos: explodedPuyos, state: this.state };
   }
 
   switchStateToDebrisDown() {
@@ -344,9 +349,7 @@ module.exports = class Board {
   }
 
   toJSON() {
-    // TODO: Return full object instead? (So we can determine amount
-    // of debris and realize when we're in a game over state.)
-    return this.grid;
+    return { grid: this.grid, state: this.state };
   }
 
   isPiecePositionInvalid() {

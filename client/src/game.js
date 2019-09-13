@@ -13,13 +13,14 @@ function updateView(boards) {
   context.fillRect(0, 0, canvas.width, canvas.height);
 
   boards.forEach((board, index) => {
+    const grid = board.grid;
     const squareSize = canvas.width / 16;
     const offsetX = (index * canvas.width) / 2 + squareSize;
     const offsetY = squareSize * 2;
     context.strokeStyle = "#ffffff";
     context.lineWidth = 2;
 
-    // Draw borders around the 12 * 6 board.
+    // Draw borders around the 12 * 6 grid.
     context.strokeRect(
       offsetX - 2,
       offsetY - 2,
@@ -27,12 +28,14 @@ function updateView(boards) {
       squareSize * 12 + 3
     );
 
-    // Draw board content.
-    // const colors = ["#404040", "#c0c0c0", "#808080", "#ffffff"]; // gray
-    // const colors = ["#ECE59A", "#FD6E8A", "#848D82", "#2C3B63"]; // modern mellow
-    // const colors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"]; // base colors
-    const colors = ["#ff48c4", "#2bd1fc", "#f3ea5f", "#c04df9", "#ff3f3f"]; // 80s
-    board.forEach((row, rowIndex) => {
+    // Draw grid content.
+    let colors;
+    if (board.state === "gameOver") {
+      colors = ["#404040", "#c0c0c0", "#808080", "#ffffff"];
+    } else {
+      colors = ["#ff48c4", "#2bd1fc", "#f3ea5f", "#c04df9", "#ff3f3f"]; // 80s
+    }
+    grid.forEach((row, rowIndex) => {
       row.forEach((cell, columnIndex) => {
         if (cell) {
           context.fillStyle = colors[cell - 1];
@@ -97,8 +100,7 @@ function connectToServer() {
 
   ws.onmessage = event => {
     const message = JSON.parse(event.data);
-    console.log("Received message from server", message);
-    if (state === "start" && message.status === "waiting-for-opponent") {
+    if (state === "start" && message.status === "waitingForOpponent") {
       state = "waiting";
       replaceStartViewWithWaitingView();
     } else if (state === "start" && message.status === "loop") {

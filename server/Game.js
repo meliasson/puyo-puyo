@@ -52,7 +52,7 @@ module.exports = class Game {
   step() {
     if (!this.isFull()) {
       const message = JSON.stringify({
-        status: "waiting-for-opponent",
+        status: "waitingForOpponent",
         game: this.toJSON()
       });
       Array.from(this.boards.keys()).forEach(player => {
@@ -62,16 +62,18 @@ module.exports = class Game {
     }
 
     for (const [client, board] of this.boards) {
-      const explodedPuyos = board.step();
+      const { explodedPuyos, state } = board.step();
+
+      if (state === "gameOver") {
+        // TODO
+      }
+
       if (explodedPuyos.length > 0) {
+        const debris =
+          explodedPuyos.length === 1 ? 1 : 2 ** explodedPuyos.length;
         for (const [tmpClient, tmpBoard] of this.boards) {
           if (tmpClient !== client) {
-            // tmpBoard.debris =
-            //   explodedPuyos.reduce((acc, val) => {
-            //     return acc + val;
-            //   }) * explodedPuyos.length;
-            tmpBoard.debris +=
-              explodedPuyos.length === 1 ? 1 : 2 ** explodedPuyos.length;
+            tmpBoard.debris += debris;
           }
         }
       }
