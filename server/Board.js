@@ -23,7 +23,7 @@ module.exports = class Board {
     }
 
     this.piece = new NullPiece();
-    this.switchStateToPuyosDown();
+    this.switchStateToPieceDropping();
   }
 
   explodePuyos() {
@@ -218,7 +218,7 @@ module.exports = class Board {
     this.insertPieceIntoGrid();
   }
 
-  movePuyosDown() {
+  movePuyosDown(pieceDropping = false) {
     let isPuyoMovedDown = false;
     // TODO: Figure out if we can express the need to loop backwards
     // with code. We do it because otherwise we'll move a puyo to the
@@ -248,7 +248,9 @@ module.exports = class Board {
         });
       });
 
-    if (!isPuyoMovedDown) {
+    if (!isPuyoMovedDown && pieceDropping && this.debris > 0) {
+      this.switchStateToDebrisDown();
+    } else if (!isPuyoMovedDown) {
       this.switchStateToExplodePuyos();
     }
   }
@@ -286,6 +288,9 @@ module.exports = class Board {
       this.steppedAt = now;
     } else if (this.state === "puyosDown") {
       this.movePuyosDown();
+      this.steppedAt = now;
+    } else if (this.state === "pieceDropping") {
+      this.movePuyosDown(true);
       this.steppedAt = now;
     } else if (this.state === "puyosExplode" && timeSinceLastStep > 100) {
       this.explodePuyos();
@@ -328,6 +333,10 @@ module.exports = class Board {
 
   switchStateToPieceDown() {
     this.state = "pieceDown";
+  }
+
+  switchStateToPieceDropping() {
+    this.state = "pieceDropping";
   }
 
   switchStateToPuyosDown() {
