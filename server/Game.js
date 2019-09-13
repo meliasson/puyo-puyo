@@ -70,7 +70,7 @@ module.exports = class Game {
             //   explodedPuyos.reduce((acc, val) => {
             //     return acc + val;
             //   }) * explodedPuyos.length;
-            tmpBoard.debris =
+            tmpBoard.debris +=
               explodedPuyos.length === 1 ? 1 : 2 ** explodedPuyos.length;
           }
         }
