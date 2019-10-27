@@ -1,8 +1,10 @@
-# The Game
+# Puyo Puyo
 
-An attempt at creating a multiplayer game using [WebSocket](https://en.wikipedia.org/wiki/WebSocket). The server is built with [Express](https://expressjs.com/) and the client with [React](https://reactjs.org/).
+A multiplayer Puyo Puyo clone, where the backend is built with [WebSocket](https://en.wikipedia.org/wiki/WebSocket) and [Express](https://expressjs.com/), and the frontend with [Create React App](https://create-react-app.dev/) and the [Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API).
 
 ## TODO
 
-* Explode pieces. Includes detecting when four (or more) puyos of the same color are connected.
-* Notice when there's no room left for spawning of new pieces and transition into a game over state.
+* Add gameplay instructions.
+* Add a game lobby.
+* Record statistics and show them when game ends. For example the total number of actions and the number of exploded n-chains.
+* AI opponents.
