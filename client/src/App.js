@@ -12,7 +12,7 @@ class App extends React.Component {
       <div>
         <div id="start-view">
           <div id="header">
-            <h1>The Amazing Meeting</h1>
+            <h1>A Puyo Puyo Clone!!!</h1>
           </div>
           <div id="footer">Press any key</div>
         </div>
